@@ -14,7 +14,7 @@ pub struct Graph {
     /// `limits[u]` is the index of the first edge with souce `u` in `edges`
     limits: Vec<usize>,
     /// List of node potentials
-    potentials: Vec<Weight>,
+    pub potentials: Vec<Weight>,
 }
 
 impl Graph {

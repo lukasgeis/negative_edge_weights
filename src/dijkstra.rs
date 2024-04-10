@@ -137,6 +137,14 @@ impl Dijkstra {
         w.0.into_inner()
     }
 
+    #[inline]
+    fn rounding_error_correction(&self, cost: &mut Weight) {
+        let top = Self::radix_to_weight(self.heap.top().unwrap());
+        if top > *cost && (top - *cost).abs() < 1e-8 {
+            *cost = top;
+        }
+    }
+
     /// Runs dijkstra on the given graph from `source_node` until either
     /// (1) All nodes with total distance <= `max_distance` have been found
     /// (2) `target_node` is found with total distance <= `max_distance`
@@ -169,7 +177,7 @@ impl Dijkstra {
 
             for (_, succ, weight) in graph.neighbors(node) {
                 let succ = *succ;
-                let cost = dist + graph.potential_weight((node, succ, *weight));
+                let mut cost = dist + graph.potential_weight((node, succ, *weight));
                 if self.visited.is_visited(succ, cost) || cost > max_distance {
                     continue;
                 }
@@ -178,8 +186,13 @@ impl Dijkstra {
                     return None;
                 }
 
-                self.visited.visit_node(succ, cost);
+                // `RadixHeapMap` panics if the inserted value is greater than the last popped
+                // value `top`. Due to floating-point precision, this can throw unwanted errors that we
+                // can prevent by rounding `cost` to `top` if they are very close to each other  
+                self.rounding_error_correction(&mut cost);
                 self.heap.push(Self::weight_to_radix(cost), succ);
+                self.visited.visit_node(succ, cost);
+
             }
         }
 

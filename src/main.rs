@@ -84,7 +84,6 @@ fn main() {
     timer = std::time::Instant::now();
     run_mcmc(&mut rng, &mut graph, &params);
 
-    println!("{graph:?}");
     if params.check {
         assert!(!contains_negative_weight_cycle(&graph), "Negative Weight Cycle was found!");
     }
