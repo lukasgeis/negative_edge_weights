@@ -7,6 +7,7 @@ pub type Node = usize;
 pub type Weight = f64;
 pub type Edge = (Node, Node, Weight);
 
+#[derive(Debug, Clone)]
 pub struct Graph {
     /// List of all edges sorted by source node
     edges: Vec<Edge>,
@@ -29,6 +30,12 @@ impl Graph {
         self.edges.len()
     }
 
+    /// Returns all edges as a slice 
+    #[inline]
+    pub fn edges(&self) -> &[Edge] {
+        &self.edges
+    } 
+
     /// Returns a slice over all outgoing edges from source node `u`
     #[inline]
     pub fn neighbors(&self, u: Node) -> &[Edge] {
@@ -44,7 +51,7 @@ impl Graph {
     /// Returns the potential weight of an edge `(u,v,w)`, i.e. `w - p[u] + p[v]`
     #[inline]
     pub fn potential_weight(&self, edge: Edge) -> Weight {
-        edge.2 + self.potentials[edge.1] + self.potentials[edge.0]
+        edge.2 + self.potentials[edge.1] - self.potentials[edge.0]
     }
 
     /// Returns a uniform random edge from the graph and its index in `edges`

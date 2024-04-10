@@ -6,8 +6,11 @@ use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use structopt::StructOpt;
 
+use crate::bellman_ford::contains_negative_weight_cycle;
+
 mod dijkstra;
 mod graph;
+mod bellman_ford;
 
 #[derive(StructOpt)]
 struct Parameters {
@@ -31,6 +34,10 @@ struct Parameters {
     /// Optional output path for the resulting weighted graph
     #[structopt(short = "o")]
     output: Option<PathBuf>,
+
+    /// Check if the generated graphs have negative weight cycles
+    #[structopt(long)]
+    check: bool,
 }
 
 #[derive(StructOpt)]
@@ -70,8 +77,17 @@ fn main() {
         timer.elapsed().as_millis(),
     );
 
+    if params.check {
+        assert!(!contains_negative_weight_cycle(&graph), "Negative Weight Cycle was found!");
+    }
+
     timer = std::time::Instant::now();
     run_mcmc(&mut rng, &mut graph, &params);
+
+    println!("{graph:?}");
+    if params.check {
+        assert!(!contains_negative_weight_cycle(&graph), "Negative Weight Cycle was found!");
+    }
 
     println!(
         "MCMC run in {}ms\nAvg. Edge Weight: {}\nFraction of negative edges: {:.1}%",
