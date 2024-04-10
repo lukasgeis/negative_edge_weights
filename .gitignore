@@ -1,0 +1,4 @@
+target
+*.gr
+*.svg
+*perf*

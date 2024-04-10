@@ -1,0 +1,12 @@
+[package]
+name = "random_negative_weights"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ordered-float = "2.8.0" # Newest version throws errors in combination with `radix-heap`
+radix-heap = { version = "0.4.2", features = ["ordered-float"] }
+rand = "0.8.5"
+rand_distr = "0.4.3"
+rand_pcg = "0.3.1"
+structopt = "0.3.26"
