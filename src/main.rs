@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufWriter, path::PathBuf};
+use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
 
 use dijkstra::Dijkstra;
 use graph::*;
@@ -6,11 +6,11 @@ use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use structopt::StructOpt;
 
-use crate::bellman_ford::contains_negative_weight_cycle;
+use crate::bellman_ford::has_negative_cycle;
 
+mod bellman_ford;
 mod dijkstra;
 mod graph;
-mod bellman_ford;
 
 #[derive(StructOpt)]
 struct Parameters {
@@ -62,7 +62,7 @@ fn main() {
         Pcg64::from_entropy()
     };
 
-    let mut timer = std::time::Instant::now();
+    let mut timer = Instant::now();
     let mut graph: Graph = match params.source {
         Source::Gnp { nodes, avg_deg } => {
             assert!(nodes > 1 && avg_deg > 0.0);
@@ -78,24 +78,40 @@ fn main() {
     );
 
     if params.check {
-        assert!(!contains_negative_weight_cycle(&graph), "Negative Weight Cycle was found!");
+        timer = Instant::now();
+        assert!(
+            !has_negative_cycle(&graph),
+            "Starting Graph has negative weight cycle"
+        );
+        println!(
+            "NegativeCycleFinder run on starting graph in {}ms",
+            timer.elapsed().as_millis()
+        );
     }
 
-    timer = std::time::Instant::now();
+    timer = Instant::now();
     run_mcmc(&mut rng, &mut graph, &params);
+    println!("MCMC run in {}ms", timer.elapsed().as_millis());
 
     if params.check {
-        assert!(!contains_negative_weight_cycle(&graph), "Negative Weight Cycle was found!");
+        timer = Instant::now();
+        assert!(
+            !has_negative_cycle(&graph),
+            "Resulting Graph has negative weight cycle"
+        );
+        println!(
+            "NegativeCycleFinder run on resulting graph in {}ms",
+            timer.elapsed().as_millis()
+        );
     }
 
     println!(
-        "MCMC run in {}ms\nAvg. Edge Weight: {}\nFraction of negative edges: {:.1}%",
-        timer.elapsed().as_millis(),
+        "Avg. Edge Weight: {}\nFraction of negative edges: {:.1}%",
         graph.avg_weight(),
         graph.frac_negative_edges() * 100.0,
     );
 
-    timer = std::time::Instant::now();
+    timer = Instant::now();
     if let Some(path) = params.output {
         let file_handle = File::create(path).expect("Unable to create file");
         let mut writer = BufWriter::new(file_handle);

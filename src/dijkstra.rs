@@ -188,11 +188,10 @@ impl Dijkstra {
 
                 // `RadixHeapMap` panics if the inserted value is greater than the last popped
                 // value `top`. Due to floating-point precision, this can throw unwanted errors that we
-                // can prevent by rounding `cost` to `top` if they are very close to each other  
+                // can prevent by rounding `cost` to `top` if they are very close to each other
                 self.rounding_error_correction(&mut cost);
                 self.heap.push(Self::weight_to_radix(cost), succ);
                 self.visited.visit_node(succ, cost);
-
             }
         }
 

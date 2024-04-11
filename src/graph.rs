@@ -14,7 +14,7 @@ pub struct Graph {
     /// `limits[u]` is the index of the first edge with souce `u` in `edges`
     limits: Vec<usize>,
     /// List of node potentials
-    pub potentials: Vec<Weight>,
+    potentials: Vec<Weight>,
 }
 
 impl Graph {
@@ -29,12 +29,6 @@ impl Graph {
     pub fn m(&self) -> usize {
         self.edges.len()
     }
-
-    /// Returns all edges as a slice 
-    #[inline]
-    pub fn edges(&self) -> &[Edge] {
-        &self.edges
-    } 
 
     /// Returns a slice over all outgoing edges from source node `u`
     #[inline]
