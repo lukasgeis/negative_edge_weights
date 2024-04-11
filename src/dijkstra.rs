@@ -50,19 +50,23 @@ impl VisitedDistances {
 
     /// Updates the distance of a node
     #[inline]
-    pub fn queue_node(&mut self, node: Node, distance: Weight) {
+    pub fn queue_node(&mut self, node: Node, distance: Weight) -> bool {
         match self.visit_map[node] {
             VisitState::Unvisisted => {
                 self.visit_map[node] = VisitState::Queued(distance);
                 self.seen_nodes.push(node);
+                true 
             }
             VisitState::Queued(dist) => {
                 if distance < dist {
                     self.visit_map[node] = VisitState::Queued(distance);
+                    true 
+                } else {
+                    false 
                 }
             }
-            VisitState::Visited(_) => {}
-        };
+            VisitState::Visited(_) => { false }
+        }
     }
 
     /// Returns *true* if we have seen `Omega(n)` nodes
@@ -209,9 +213,16 @@ impl Dijkstra {
             let dist = Self::radix_to_weight(dist);
             for (_, succ, weight) in graph.neighbors(node) {
                 let succ = *succ;
-                let mut cost = dist + graph.potential_weight((node, succ, *weight));
+                if self.visit_states.is_visited(succ) {
+                    continue;
+                }
+
+                let mut next = graph.potential_weight((node, succ, *weight));
+                self.rounding_error_correction(&mut next, 0.0);
+
+                let mut cost = dist + next;
                 self.rounding_error_correction(&mut cost, 0.0);
-                if self.visit_states.is_visited(succ) || cost > max_distance {
+                if cost > max_distance {
                     continue;
                 }
 
@@ -228,8 +239,9 @@ impl Dijkstra {
                 // can prevent by rounding `cost` to `top` if they are very close to each other
                 let top = Self::radix_to_weight(self.heap.top().unwrap());
                 self.rounding_error_correction(&mut cost, top);
-                self.heap.push(Self::weight_to_radix(cost), succ);
-                self.visit_states.queue_node(succ, cost);
+                if self.visit_states.queue_node(succ, cost) {
+                    self.heap.push(Self::weight_to_radix(cost), succ);
+                }
             }
         }
 
