@@ -215,8 +215,12 @@ impl Dijkstra {
                     continue;
                 }
 
-                if succ == target_node && cost < max_distance {
-                    return None;
+                if succ == target_node {
+                    if cost == max_distance {
+                        return Some(self.visit_states.get_distances());
+                    } else {
+                        return None;
+                    }
                 }
 
                 // `RadixHeapMap` panics if the inserted value is greater than the last popped
