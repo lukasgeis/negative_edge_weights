@@ -33,6 +33,7 @@ OPTIONS:
     -o <output>                 Output path; if no specified, the graph is dumped to STDERR
     -r <rounds-per-edge>        Carry out m * rounds_per_edge MCMC update steps; if rounds_per_edge is negative, iterate
                                 over all edges in random order and set to smallest weight possible [default: 1]
+    --check                     Run additional NegativeCycleDetector checks before and after the MCMC 
     -s <seed>                   
 
 SUBCOMMANDS:
