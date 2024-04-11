@@ -83,7 +83,7 @@ fn main() {
     if params.check {
         timer = Instant::now();
         assert!(
-            !has_negative_cycle(&graph),
+            !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
             "Starting Graph has negative weight cycle"
         );
         println!(
@@ -99,7 +99,7 @@ fn main() {
     if params.check {
         timer = Instant::now();
         assert!(
-            !has_negative_cycle(&graph),
+            !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
             "Resulting Graph has negative weight cycle"
         );
         println!(

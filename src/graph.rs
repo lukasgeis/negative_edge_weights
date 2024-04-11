@@ -89,6 +89,15 @@ impl Graph {
         }
     }
 
+    /// Check whether the given potentials are feasible, i.e. the graph has no negative cycle
+    #[allow(unused)]
+    #[inline]
+    pub fn is_feasible(&self) -> bool {
+        self.edges
+            .iter()
+            .all(|e| self.potential_weight(*e) >= -1e-8)
+    }
+
     /// Generate a GNP graph with specified default_weight for every edge
     pub fn gen_gnp(rng: &mut impl Rng, n: usize, p: f64, default_weight: Weight) -> Self {
         // TODO: flip probability for `p > 0.5` and generate complement graph

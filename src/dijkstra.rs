@@ -4,60 +4,86 @@ use std::cmp::Reverse;
 
 use crate::graph::*;
 
+/// The state of a node in Dijkstra
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum VisitState {
+    /// The node has not been found yet
+    Unvisisted,
+    /// The node is in the queue with current value
+    Queued(Weight),
+    /// The node was visited with final value
+    Visited(Weight),
+}
+
+#[derive(Debug, Clone)]
 struct VisitedDistances {
-    /// Stores total distances for each node in the graph or `INFINITY` if the node was not yet reached
-    /// in this iteration
-    distances: Vec<Weight>,
+    /// Stores the state for each node in this iteration
+    visit_map: Vec<VisitState>,
     /// Stores which nodes were reached in this iteration: only beneficial if we have `o(n)` nodes
-    /// visited in total
-    visited_nodes: Vec<Node>,
+    /// seen in total
+    seen_nodes: Vec<Node>,
 }
 
 impl VisitedDistances {
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
-            distances: vec![Weight::INFINITY; n],
+            visit_map: vec![VisitState::Unvisisted; n],
             // Might be beneficial to initialize with capacity `n` to prevent ever reallocating
-            visited_nodes: Vec::new(),
+            seen_nodes: Vec::new(),
         }
     }
 
-    /// Returns *true* if the node is already visisted, i.e. if the stored distance is strictly
-    /// less than the new distance
+    /// Visits a node (if it is currently queued)
     #[inline]
-    pub fn is_visited(&self, node: Node, distance: Weight) -> bool {
-        self.distances[node] < distance
+    pub fn visit_node(&mut self, node: Node) {
+        if let VisitState::Queued(dist) = self.visit_map[node] {
+            self.visit_map[node] = VisitState::Visited(dist);
+        }
+    }
+
+    /// Returns *true* if the node is already visisted
+    #[inline]
+    pub fn is_visited(&self, node: Node) -> bool {
+        matches!(self.visit_map[node], VisitState::Visited(_))
     }
 
     /// Updates the distance of a node
     #[inline]
-    pub fn visit_node(&mut self, node: Node, distance: Weight) {
-        if self.distances[node] == f64::INFINITY {
-            self.visited_nodes.push(node);
-        }
-        self.distances[node] = distance;
+    pub fn queue_node(&mut self, node: Node, distance: Weight) {
+        match self.visit_map[node] {
+            VisitState::Unvisisted => {
+                self.visit_map[node] = VisitState::Queued(distance);
+                self.seen_nodes.push(node);
+            }
+            VisitState::Queued(dist) => {
+                if distance < dist {
+                    self.visit_map[node] = VisitState::Queued(distance);
+                }
+            }
+            VisitState::Visited(_) => {}
+        };
     }
 
-    /// Returns *true* if we have visited `Omega(n)` nodes
+    /// Returns *true* if we have seen `Omega(n)` nodes
     #[inline]
     fn is_asymptotically_full(&self) -> bool {
-        self.visited_nodes.len() > self.distances.len() / 4
+        self.seen_nodes.len() > self.visit_map.len() / 4
     }
 
     /// Resets the data structure
     #[inline]
     pub fn reset(&mut self) {
         if self.is_asymptotically_full() {
-            self.visited_nodes.clear();
-            self.distances
+            self.seen_nodes.clear();
+            self.visit_map
                 .iter_mut()
-                .for_each(|w| *w = Weight::INFINITY);
+                .for_each(|w| *w = VisitState::Unvisisted);
         } else {
-            self.visited_nodes
+            self.seen_nodes
                 .iter()
-                .for_each(|u| self.distances[*u] = Weight::INFINITY);
-            self.visited_nodes.clear();
+                .for_each(|u| self.visit_map[*u] = VisitState::Unvisisted);
+            self.seen_nodes.clear();
         }
     }
 
@@ -65,15 +91,21 @@ impl VisitedDistances {
     #[inline]
     pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, Weight)> + '_ {
         if self.is_asymptotically_full() {
-            DoubleIterator::IterA(self.distances.iter().enumerate().filter_map(|(u, w)| {
-                if *w < Weight::INFINITY {
+            DoubleIterator::IterA(self.visit_map.iter().enumerate().filter_map(|(u, s)| {
+                if let VisitState::Visited(w) = s {
                     Some((u, *w))
                 } else {
                     None
                 }
             }))
         } else {
-            DoubleIterator::IterB(self.visited_nodes.iter().map(|u| (*u, self.distances[*u])))
+            DoubleIterator::IterB(self.seen_nodes.iter().filter_map(|u| {
+                if let VisitState::Visited(w) = self.visit_map[*u] {
+                    Some((*u, w))
+                } else {
+                    None
+                }
+            }))
         }
     }
 }
@@ -112,7 +144,7 @@ pub struct Dijkstra {
     /// MinHeap used for Dijkstra: implementation uses a MaxHeap, thus we need `Reverse`
     heap: RadixHeapMap<RadixWeight, Node>,
     /// Stores which nodes have already been visited in which total distance
-    visited: VisitedDistances,
+    visit_states: VisitedDistances,
 }
 
 impl Dijkstra {
@@ -121,7 +153,7 @@ impl Dijkstra {
     pub fn new(n: usize) -> Self {
         Self {
             heap: RadixHeapMap::new(),
-            visited: VisitedDistances::new(n),
+            visit_states: VisitedDistances::new(n),
         }
     }
 
@@ -138,10 +170,9 @@ impl Dijkstra {
     }
 
     #[inline]
-    fn rounding_error_correction(&self, cost: &mut Weight) {
-        let top = Self::radix_to_weight(self.heap.top().unwrap());
-        if top > *cost && (top - *cost).abs() < 1e-8 {
-            *cost = top;
+    fn rounding_error_correction(&self, to_round: &mut Weight, value: Weight) {
+        if value > *to_round && (value - *to_round).abs() < 1e-8 {
+            *to_round = value;
         }
     }
 
@@ -162,23 +193,25 @@ impl Dijkstra {
             return None;
         }
 
-        self.visited.reset();
+        self.visit_states.reset();
         self.heap.clear();
 
-        self.visited.visit_node(source_node, 0 as Weight);
+        self.visit_states.queue_node(source_node, 0 as Weight);
         self.heap
             .push(Self::weight_to_radix(0 as Weight), source_node);
-
         while let Some((dist, node)) = self.heap.pop() {
-            let dist = Self::radix_to_weight(dist);
-            if self.visited.is_visited(node, dist) {
+            if self.visit_states.is_visited(node) {
                 continue;
             }
 
+            self.visit_states.visit_node(node);
+
+            let dist = Self::radix_to_weight(dist);
             for (_, succ, weight) in graph.neighbors(node) {
                 let succ = *succ;
                 let mut cost = dist + graph.potential_weight((node, succ, *weight));
-                if self.visited.is_visited(succ, cost) || cost > max_distance {
+                self.rounding_error_correction(&mut cost, 0.0);
+                if self.visit_states.is_visited(succ) || cost > max_distance {
                     continue;
                 }
 
@@ -189,13 +222,14 @@ impl Dijkstra {
                 // `RadixHeapMap` panics if the inserted value is greater than the last popped
                 // value `top`. Due to floating-point precision, this can throw unwanted errors that we
                 // can prevent by rounding `cost` to `top` if they are very close to each other
-                self.rounding_error_correction(&mut cost);
+                let top = Self::radix_to_weight(self.heap.top().unwrap());
+                self.rounding_error_correction(&mut cost, top);
                 self.heap.push(Self::weight_to_radix(cost), succ);
-                self.visited.visit_node(succ, cost);
+                self.visit_states.queue_node(succ, cost);
             }
         }
 
-        Some(self.visited.get_distances())
+        Some(self.visit_states.get_distances())
     }
 }
 
