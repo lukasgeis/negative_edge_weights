@@ -102,3 +102,45 @@ fn shortest_path_tree_is_acyclic(graph: &Graph, predecessors: &[Node]) -> bool {
 
     unused_nodes.cardinality() == 0
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_data::*;
+
+    #[test]
+    fn test_negative_cycle_finder() {
+        let mut graph = Graph::from_edge_list(5, EDGES.to_vec(), true);
+
+        for weights in GOOD_WEIGHTS {
+            for i in 0..EDGES.len() {
+                graph.update_weight(i, weights[i]);
+            }
+            assert!(!has_negative_cycle(&graph));
+        }
+
+        for weights in BAD_WEIGHTS {
+            for i in 0..EDGES.len() {
+                graph.update_weight(i, weights[i]);
+            }
+            assert!(has_negative_cycle(&graph));
+        }
+    }
+
+    #[test]
+    fn test_bellman_ford() {
+        let mut graph = Graph::from_edge_list(5, EDGES.to_vec(), true);
+
+        for i in 0..GOOD_WEIGHTS.len() {
+            for j in 0..EDGES.len() {
+                graph.update_weight(j, GOOD_WEIGHTS[i][j]);
+            }
+            let res: Vec<Vec<Weight>> = DISTANCES[i].into_iter().map(|s| s.to_vec()).collect();
+
+            for u in 0..graph.n() {
+                let bf = bellman_ford(&graph, u).unwrap();
+                assert_eq!(res[u], bf);
+            }
+        }
+    }
+}

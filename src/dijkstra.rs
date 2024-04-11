@@ -182,7 +182,7 @@ impl Dijkstra {
                     continue;
                 }
 
-                if succ == target_node {
+                if succ == target_node && cost < max_distance {
                     return None;
                 }
 
@@ -196,5 +196,36 @@ impl Dijkstra {
         }
 
         Some(self.visited.get_distances())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_data::*;
+
+    #[test]
+    fn test_dijkstra() {
+        let mut graph = Graph::from_edge_list(5, EDGES.to_vec(), true);
+
+        let mut dijsktra = Dijkstra::new(graph.n());
+
+        for j in 0..EDGES.len() {
+            graph.update_weight(j, GOOD_WEIGHTS[2][j]);
+        }
+        let res: Vec<Vec<Weight>> = DISTANCES[2].into_iter().map(|s| s.to_vec()).collect();
+
+        let targets: [Node; 5] = [4, 2, 4, 2, 3];
+
+        for u in 0..graph.n() {
+            let mut dj = vec![0.0; graph.n()];
+            for (v, w) in dijsktra
+                .run(&graph, u, targets[u], res[u][targets[u]])
+                .unwrap()
+            {
+                dj[v] = w;
+            }
+            assert_eq!(res[u], dj);
+        }
     }
 }

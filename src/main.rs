@@ -6,7 +6,10 @@ use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use structopt::StructOpt;
 
-use crate::bellman_ford::has_negative_cycle;
+use bellman_ford::has_negative_cycle;
+
+#[cfg(test)]
+pub(crate) use graph::test_graph_data as test_data;
 
 mod bellman_ford;
 mod dijkstra;
@@ -71,7 +74,7 @@ fn main() {
         }
     };
     println!(
-        "Loaded graph with {} nodes and {} edges and no negative cycle in {}ms",
+        "Loaded graph with {} nodes and {} edges in {}ms",
         graph.n(),
         graph.m(),
         timer.elapsed().as_millis(),
@@ -84,7 +87,7 @@ fn main() {
             "Starting Graph has negative weight cycle"
         );
         println!(
-            "NegativeCycleFinder run on starting graph in {}ms",
+            "NegativeCycleFinder run on starting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
         );
     }
@@ -100,7 +103,7 @@ fn main() {
             "Resulting Graph has negative weight cycle"
         );
         println!(
-            "NegativeCycleFinder run on resulting graph in {}ms",
+            "NegativeCycleFinder run on resulting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
         );
     }

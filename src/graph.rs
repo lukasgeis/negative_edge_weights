@@ -141,3 +141,56 @@ impl Graph {
         Ok(())
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test_graph_data {
+    use super::*;
+
+    /// A graph with `5` nodes and `10` edges
+    ///
+    /// Image: `https://dreampuf.github.io/GraphvizOnline/#digraph%20G%20%7Bv0%20-%3E%20%7Bv1%2C%20v2%7D%3Bv1%20-%3E%20%7Bv3%2C%20v4%7D%3Bv2%20-%3E%20%7Bv1%2C%20v3%7D%3Bv3%20-%3E%20%7Bv0%2C%20v1%2C%20v4%7D%3Bv4%20-%3E%20%7Bv0%7D%3B%7D`
+    pub(crate) const EDGES: [Edge; 10] = [
+        (0, 1, 1.0),
+        (0, 2, 1.0),
+        (1, 3, 1.0),
+        (1, 4, 1.0),
+        (2, 1, 1.0),
+        (2, 3, 1.0),
+        (3, 0, 1.0),
+        (3, 1, 1.0),
+        (3, 4, 1.0),
+        (4, 0, 1.0),
+    ];
+
+    /// Weights for `EDGES` that **do not** introduce a negative cycle
+    pub(crate) const GOOD_WEIGHTS: [[Weight; 10]; 3] = [
+        [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 3.0, 1.0, 0.0, 3.0],
+        [0.0; 10],
+        [1.0; 10],
+    ];
+
+    /// Distance matrices for each `GOOD_WEIGHTS` graph
+    pub(crate) const DISTANCES: [[[Weight; 5]; 5]; 3] = [
+        [
+            [0.0, -2.0, -1.0, -3.0, -3.0],
+            [2.0, 0.0, 1.0, -1.0, -1.0],
+            [1.0, -1.0, 0.0, -2.0, -2.0],
+            [3.0, 1.0, 2.0, 0.0, 0.0],
+            [3.0, 1.0, 2.0, 0.0, 0.0],
+        ],
+        [[0.0; 5]; 5],
+        [
+            [0.0, 1.0, 1.0, 2.0, 2.0],
+            [2.0, 0.0, 3.0, 1.0, 1.0],
+            [2.0, 1.0, 0.0, 1.0, 2.0],
+            [1.0, 1.0, 2.0, 0.0, 1.0],
+            [1.0, 2.0, 2.0, 3.0, 0.0],
+        ],
+    ];
+
+    /// Weights for `EDGES` that **do** introduce a negative cycle
+    pub(crate) const BAD_WEIGHTS: [[Weight; 10]; 2] = [
+        [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 3.0, 1.0, 0.0, 2.0],
+        [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+    ];
+}
