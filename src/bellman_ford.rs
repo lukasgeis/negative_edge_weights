@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use ez_bitset::bitset::BitSet;
 
-use crate::graph::*;
+use crate::{graph::*, weight::Weight};
 
 /// Runs BF on the given graph and starting node
 ///
@@ -12,35 +12,35 @@ use crate::graph::*;
 /// negative cycle exists
 #[allow(unused)]
 #[inline]
-pub fn bellman_ford(graph: &Graph, source_node: Node) -> Option<Vec<Weight>> {
+pub fn bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Node) -> Option<Vec<W>> {
     inner_bellman_ford(graph, Some(source_node))
 }
 
 /// Returns *true* if the graph has a negative weight cycle
 #[inline]
-pub fn has_negative_cycle(graph: &Graph) -> bool {
+pub fn has_negative_cycle<W: Weight>(graph: &Graph<W>) -> bool {
     inner_bellman_ford(graph, None).is_none()
 }
 
 /// Implementation of the SPFA heuristic with cycle-checks every `n` relaxations  
 /// If `source_node` is `None`, run from all nodes in graph
-fn inner_bellman_ford(graph: &Graph, source_node: Option<Node>) -> Option<Vec<Weight>> {
+fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) -> Option<Vec<W>> {
     // A value of `n` means: no predecessor set yet
     let mut predecessors: Vec<Node> = vec![graph.n() as Node; graph.n()];
 
     let (mut distances, mut queue, mut in_queue) = if let Some(source_node) = source_node {
-        let mut distances = vec![Weight::INFINITY; graph.n()];
+        let mut distances = vec![W::MAX; graph.n()];
         let mut queue = VecDeque::with_capacity(graph.n());
         let mut in_queue = BitSet::new(graph.n());
 
-        distances[source_node] = 0 as Weight;
+        distances[source_node] = W::zero();
         queue.push_back(source_node);
         in_queue.set_bit(source_node);
 
         (distances, queue, in_queue)
     } else {
         (
-            vec![0 as Weight; graph.n()],
+            vec![W::zero(); graph.n()],
             VecDeque::from((0..graph.n()).collect::<Vec<Node>>()),
             BitSet::new_all_set(graph.n()),
         )
@@ -75,7 +75,7 @@ fn inner_bellman_ford(graph: &Graph, source_node: Option<Node>) -> Option<Vec<We
 }
 
 // Check if the shortest path tree is acyclic via TopoSearch
-fn shortest_path_tree_is_acyclic(graph: &Graph, predecessors: &[Node]) -> bool {
+fn shortest_path_tree_is_acyclic<W: Weight>(graph: &Graph<W>, predecessors: &[Node]) -> bool {
     let mut unused_nodes = BitSet::new_all_set(graph.n());
     let mut stack: Vec<Node> = predecessors
         .iter()
@@ -135,7 +135,7 @@ mod tests {
             for j in 0..EDGES.len() {
                 graph.update_weight(j, GOOD_WEIGHTS[i][j]);
             }
-            let res: Vec<Vec<Weight>> = DISTANCES[i].into_iter().map(|s| s.to_vec()).collect();
+            let res: Vec<Vec<f64>> = DISTANCES[i].into_iter().map(|s| s.to_vec()).collect();
 
             for u in 0..graph.n() {
                 let bf = bellman_ford(&graph, u).unwrap();

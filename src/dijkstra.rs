@@ -1,30 +1,28 @@
-use ordered_float::NotNan;
 use radix_heap::RadixHeapMap;
-use std::cmp::Reverse;
 
-use crate::graph::*;
+use crate::{graph::*, weight::Weight};
 
 /// The state of a node in Dijkstra
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum VisitState {
+enum VisitState<W: Weight> {
     /// The node has not been found yet
     Unvisisted,
     /// The node is in the queue with current value
-    Queued(Weight),
+    Queued(W),
     /// The node was visited with final value
-    Visited(Weight),
+    Visited(W),
 }
 
 #[derive(Debug, Clone)]
-struct VisitedDistances {
+struct VisitedDistances<W: Weight> {
     /// Stores the state for each node in this iteration
-    visit_map: Vec<VisitState>,
+    visit_map: Vec<VisitState<W>>,
     /// Stores which nodes were reached in this iteration: only beneficial if we have `o(n)` nodes
     /// seen in total
     seen_nodes: Vec<Node>,
 }
 
-impl VisitedDistances {
+impl<W: Weight> VisitedDistances<W> {
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
@@ -50,22 +48,22 @@ impl VisitedDistances {
 
     /// Updates the distance of a node
     #[inline]
-    pub fn queue_node(&mut self, node: Node, distance: Weight) -> bool {
+    pub fn queue_node(&mut self, node: Node, distance: W) -> bool {
         match self.visit_map[node] {
             VisitState::Unvisisted => {
                 self.visit_map[node] = VisitState::Queued(distance);
                 self.seen_nodes.push(node);
-                true 
+                true
             }
             VisitState::Queued(dist) => {
                 if distance < dist {
                     self.visit_map[node] = VisitState::Queued(distance);
-                    true 
+                    true
                 } else {
-                    false 
+                    false
                 }
             }
-            VisitState::Visited(_) => { false }
+            VisitState::Visited(_) => false,
         }
     }
 
@@ -93,7 +91,7 @@ impl VisitedDistances {
 
     /// Returns an iterator over all discovered nodes in the shortest path tree and their total distances  
     #[inline]
-    pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, Weight)> + '_ {
+    pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, W)> + '_ {
         if self.is_asymptotically_full() {
             DoubleIterator::IterA(self.visit_map.iter().enumerate().filter_map(|(u, s)| {
                 if let VisitState::Visited(w) = s {
@@ -138,45 +136,22 @@ where
     }
 }
 
-/// `f64` does not implement `Ord` as well as `Radix`, hence we need the wrapper `NotNan`.
-/// Additionally, `RadixHeapMap` is a MaxHeap, but we require a MinHeap
-type RadixWeight = Reverse<NotNan<Weight>>;
-
 /// Dijkstra instance to reuse data structure for multiple runs
 /// Note that this is meant to be used on graphs with the same number of nodes only
-pub struct Dijkstra {
+pub struct Dijkstra<W: Weight> {
     /// MinHeap used for Dijkstra: implementation uses a MaxHeap, thus we need `Reverse`
-    heap: RadixHeapMap<RadixWeight, Node>,
+    heap: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
     /// Stores which nodes have already been visited in which total distance
-    visit_states: VisitedDistances,
+    visit_states: VisitedDistances<W>,
 }
 
-impl Dijkstra {
+impl<W: Weight> Dijkstra<W> {
     /// Initializes Dijkstra for a graph with `n` nodes
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
             heap: RadixHeapMap::new(),
             visit_states: VisitedDistances::new(n),
-        }
-    }
-
-    /// Converts a `Weight` into a `RadixWeight`
-    #[inline]
-    fn weight_to_radix(w: Weight) -> RadixWeight {
-        Reverse(NotNan::new(w).expect("Some Weight was NaN"))
-    }
-
-    /// Converts a `RadixWeight` into a `Weight`
-    #[inline]
-    fn radix_to_weight(w: RadixWeight) -> Weight {
-        w.0.into_inner()
-    }
-
-    #[inline]
-    fn rounding_error_correction(&self, to_round: &mut Weight, value: Weight) {
-        if value > *to_round && (value - *to_round).abs() < 1e-8 {
-            *to_round = value;
         }
     }
 
@@ -188,11 +163,11 @@ impl Dijkstra {
     /// by dijkstra. In case (2) return `None`.
     pub fn run(
         &mut self,
-        graph: &Graph,
+        graph: &Graph<W>,
         source_node: Node,
         target_node: Node,
-        max_distance: Weight,
-    ) -> Option<impl Iterator<Item = (Node, Weight)> + '_> {
+        max_distance: W,
+    ) -> Option<impl Iterator<Item = (Node, W)> + '_> {
         if source_node == target_node {
             return None;
         }
@@ -200,9 +175,8 @@ impl Dijkstra {
         self.visit_states.reset();
         self.heap.clear();
 
-        self.visit_states.queue_node(source_node, 0 as Weight);
-        self.heap
-            .push(Self::weight_to_radix(0 as Weight), source_node);
+        self.visit_states.queue_node(source_node, W::zero());
+        self.heap.push(W::to_radix(W::zero()), source_node);
         while let Some((dist, node)) = self.heap.pop() {
             if self.visit_states.is_visited(node) {
                 continue;
@@ -210,7 +184,7 @@ impl Dijkstra {
 
             self.visit_states.visit_node(node);
 
-            let dist = Self::radix_to_weight(dist);
+            let dist = W::from_radix(dist);
             for (_, succ, weight) in graph.neighbors(node) {
                 let succ = *succ;
                 if self.visit_states.is_visited(succ) {
@@ -218,29 +192,29 @@ impl Dijkstra {
                 }
 
                 let mut next = graph.potential_weight((node, succ, *weight));
-                self.rounding_error_correction(&mut next, 0.0);
+                next.round_up(W::zero());
 
                 let mut cost = dist + next;
-                self.rounding_error_correction(&mut cost, 0.0);
+                cost.round_up(W::zero());
                 if cost > max_distance {
                     continue;
                 }
 
-                if succ == target_node {
-                    if cost == max_distance {
-                        return Some(self.visit_states.get_distances());
-                    } else {
-                        return None;
-                    }
+                if succ == target_node && cost < max_distance {
+                    return None;
                 }
 
                 // `RadixHeapMap` panics if the inserted value is greater than the last popped
                 // value `top`. Due to floating-point precision, this can throw unwanted errors that we
-                // can prevent by rounding `cost` to `top` if they are very close to each other
-                let top = Self::radix_to_weight(self.heap.top().unwrap());
-                self.rounding_error_correction(&mut cost, top);
+                // can prevent by rounding `cost` to `top` if `top` is greater.
+                //
+                // Note that this should only happen due to floating-point precision errors. If
+                // there is a logic error in some part of the code, this method might nullify the
+                // error unknowingly
+                let top = W::from_radix(self.heap.top().unwrap());
+                cost.round_up(top);
                 if self.visit_states.queue_node(succ, cost) {
-                    self.heap.push(Self::weight_to_radix(cost), succ);
+                    self.heap.push(W::to_radix(cost), succ);
                 }
             }
         }
@@ -263,7 +237,7 @@ mod tests {
         for j in 0..EDGES.len() {
             graph.update_weight(j, GOOD_WEIGHTS[2][j]);
         }
-        let res: Vec<Vec<Weight>> = DISTANCES[2].into_iter().map(|s| s.to_vec()).collect();
+        let res: Vec<Vec<f64>> = DISTANCES[2].into_iter().map(|s| s.to_vec()).collect();
 
         let targets: [Node; 5] = [4, 2, 4, 2, 3];
 

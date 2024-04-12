@@ -332,6 +332,7 @@ name = "random_negative_weights"
 version = "0.1.0"
 dependencies = [
  "ez-bitset",
+ "num",
  "ordered-float",
  "radix-heap",
  "rand",

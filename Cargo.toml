@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 ez-bitset = "0.1.0"
+num = "0.4.1"
 ordered-float = "2.8.0" # Newest version throws errors in combination with `radix-heap`
 radix-heap = { version = "0.4.2", features = ["ordered-float"] }
 rand = "0.8.5"

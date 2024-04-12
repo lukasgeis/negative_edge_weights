@@ -3,6 +3,7 @@ use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
 use dijkstra::Dijkstra;
 use graph::*;
 use rand::{Rng, SeedableRng};
+use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 use structopt::StructOpt;
 
@@ -10,10 +11,12 @@ use bellman_ford::has_negative_cycle;
 
 #[cfg(test)]
 pub(crate) use graph::test_graph_data as test_data;
+use weight::{Weight, WeightType};
 
 mod bellman_ford;
 mod dijkstra;
 mod graph;
+mod weight;
 
 #[derive(StructOpt)]
 struct Parameters {
@@ -21,10 +24,13 @@ struct Parameters {
     source: Source,
 
     #[structopt(short = "w", default_value = "-1")]
-    min_weight: Weight,
+    min_weight: f64,
 
     #[structopt(short = "W", default_value = "1")]
-    max_weight: Weight,
+    max_weight: f64,
+
+    #[structopt(short = "t", default_value = "f64")]
+    weight_type: WeightType,
 
     /// Carry out m * rounds_per_edge MCMC update steps
     #[structopt(short = "r", default_value = "1")]
@@ -59,6 +65,17 @@ fn main() {
     assert!(params.min_weight < params.max_weight);
     assert!(params.rounds_per_edge > 0.0);
 
+    match params.weight_type {
+        WeightType::F32 => run::<f32>(params),
+        WeightType::F64 => run::<f64>(params),
+        WeightType::I8 => run::<i8>(params),
+        WeightType::I16 => run::<i16>(params),
+        WeightType::I32 => run::<i32>(params),
+        WeightType::I64 => run::<i64>(params),
+    };
+}
+
+fn run<W: Weight>(params: Parameters) {
     let mut rng = if let Some(seed) = params.seed {
         Pcg64::seed_from_u64(seed)
     } else {
@@ -66,11 +83,11 @@ fn main() {
     };
 
     let mut timer = Instant::now();
-    let mut graph: Graph = match params.source {
+    let mut graph: Graph<W> = match params.source {
         Source::Gnp { nodes, avg_deg } => {
             assert!(nodes > 1 && avg_deg > 0.0);
             let prob = avg_deg / (nodes as f64);
-            Graph::gen_gnp(&mut rng, nodes, prob, 1 as Weight)
+            Graph::gen_gnp(&mut rng, nodes, prob, W::one())
         }
     };
     println!(
@@ -127,15 +144,19 @@ fn main() {
 }
 
 /// Runs the MCMC on the graph with the specified parameters
-fn run_mcmc(rng: &mut impl Rng, graph: &mut Graph, params: &Parameters) {
+fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters) {
     let num_rounds = (graph.m() as f64 * params.rounds_per_edge).ceil() as u64;
     let mut dijkstra = Dijkstra::new(graph.n());
+    let sampler = Uniform::new(
+        W::from_f64(params.min_weight),
+        W::from_f64(params.max_weight),
+    );
     for _ in 0..num_rounds {
         let (idx, (u, v, _)) = graph.random_edge(rng);
-        let weight = rng.gen_range(params.min_weight..=params.max_weight);
+        let weight = sampler.sample(rng);
 
         let potential_weight = graph.potential_weight((u, v, weight));
-        if potential_weight >= 0.0 {
+        if potential_weight >= W::zero() {
             graph.update_weight(idx, weight);
             continue;
         }
