@@ -29,7 +29,7 @@ pub trait Weight:
     + Debug
     + Sum
 {
-    /// `RadixHeapMap` requires values that implement the following. Additionally we need a MinHeap
+    /// `RadixHeapMap` requires values that implement the following traits. Additionally we need a MinHeap
     /// while `RadixHeapMap` is a MaxHeap
     type RadixWeight: Radix + Ord + Copy;
 
@@ -39,7 +39,7 @@ pub trait Weight:
     /// Maximum positive value, i.e. `INFINITY` for `f64` and `2^64 - 1` for `i64`
     const MAX: Self;
 
-    // Float Conversions are explicitly implemented here since `f64` do not implement
+    // Float Conversions are explicitly implemented here since `f64` does not implement
     // `From<i64>` and so on
 
     /// Convert from an `f64` to `Self`
@@ -54,7 +54,7 @@ pub trait Weight:
     /// Convert the weight back from its `RadixWeight` form
     fn from_radix(radix: Self::RadixWeight) -> Self;
 
-    /// Rounds `self` up to `value` if they are close
+    /// Rounds `self` up to `value` if `value` is greater
     ///
     /// Note that this is mainly supposed to be used to correct floating point errors thus for `f32` and `f64` implementing this trait.
     /// Non-float types should leave this method empty.
@@ -149,7 +149,7 @@ pub enum WeightType {
 }
 
 impl FromStr for WeightType {
-    // We should always use a Weight-Type - so default to `f64`
+    // We should always use a WeightType - so default to `f64`
     type Err = Infallible;
 
     fn from_str(t: &str) -> Result<Self, Self::Err> {
