@@ -74,7 +74,7 @@ impl<W: Weight> Graph<W> {
         let mut curr_edge: usize = 0;
         let limits: Vec<usize> = (0..n)
             .map(|i| {
-                while edges[curr_edge].0 < i {
+                while curr_edge < edges.len() && edges[curr_edge].0 < i {
                     curr_edge += 1;
                 }
                 curr_edge
