@@ -91,6 +91,7 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
             Graph::gen_gnp(&mut rng, nodes, prob, W::from_f64(params.max_weight))
         }
     };
+    #[cfg(not(feature = "hops"))]
     println!(
         "Loaded graph with {} nodes and {} edges in {}ms",
         graph.n(),
@@ -104,6 +105,7 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
             !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
             "Starting Graph has negative weight cycle"
         );
+        #[cfg(not(feature = "hops"))]
         println!(
             "NegativeCycleFinder run on starting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
@@ -112,6 +114,7 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
 
     timer = Instant::now();
     run_mcmc(&mut rng, &mut graph, &params);
+    #[cfg(not(feature = "hops"))]
     println!("MCMC run in {}ms", timer.elapsed().as_millis());
 
     if params.check {
@@ -120,12 +123,14 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
             !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
             "Resulting Graph has negative weight cycle"
         );
+        #[cfg(not(feature = "hops"))]
         println!(
             "NegativeCycleFinder run on resulting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
         );
     }
 
+    #[cfg(not(feature = "hops"))]
     println!(
         "Avg. Edge Weight: {}\nFraction of negative edges: {:.1}%",
         graph.avg_weight(),
@@ -142,6 +147,7 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
             graph.store_graph(&mut ::std::io::stderr())
         }
         .unwrap();
+        #[cfg(not(feature = "hops"))]
         println!("Graph stored in {}ms", timer.elapsed().as_millis());
     }
 }

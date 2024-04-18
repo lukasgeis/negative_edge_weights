@@ -1,3 +1,6 @@
+#[cfg(feature = "hops")]
+use std::cmp::Reverse;
+
 use radix_heap::RadixHeapMap;
 
 use crate::{graph::*, weight::Weight};
@@ -140,7 +143,10 @@ where
 /// Note that this is meant to be used on graphs with the same number of nodes only
 pub struct Dijkstra<W: Weight> {
     /// MinHeap used for Dijkstra: implementation uses a MaxHeap, thus we need `Reverse`
+    #[cfg(not(feature = "hops"))]
     heap: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
+    #[cfg(feature = "hops")]
+    heap: RadixHeapMap<(<W as Weight>::RadixWeight, Reverse<usize>), Node>,
     /// Stores which nodes have already been visited in which total distance
     visit_states: VisitedDistances<W>,
 }
@@ -169,6 +175,8 @@ impl<W: Weight> Dijkstra<W> {
         max_distance: W,
     ) -> Option<impl Iterator<Item = (Node, W)> + '_> {
         if source_node == target_node {
+            #[cfg(feature = "hops")]
+            println!("0");
             return None;
         }
 
@@ -176,7 +184,12 @@ impl<W: Weight> Dijkstra<W> {
         self.heap.clear();
 
         self.visit_states.queue_node(source_node, W::zero());
+        #[cfg(not(feature = "hops"))]
         self.heap.push(W::to_radix(W::zero()), source_node);
+        #[cfg(feature = "hops")]
+        self.heap
+            .push((W::to_radix(W::zero()), Reverse(0)), source_node);
+
         while let Some((dist, node)) = self.heap.pop() {
             if self.visit_states.is_visited(node) {
                 continue;
@@ -184,7 +197,13 @@ impl<W: Weight> Dijkstra<W> {
 
             self.visit_states.visit_node(node);
 
+            #[cfg(feature = "hops")]
+            let (dist, hops) = dist;
+            #[cfg(feature = "hops")]
+            let hops = hops.0;
+
             let dist = W::from_radix(dist);
+
             for (_, succ, weight) in graph.neighbors(node) {
                 let succ = *succ;
                 if self.visit_states.is_visited(succ) {
@@ -201,6 +220,8 @@ impl<W: Weight> Dijkstra<W> {
                 }
 
                 if succ == target_node && cost < max_distance {
+                    #[cfg(feature = "hops")]
+                    println!("{}", hops + 1);
                     return None;
                 }
 
@@ -211,10 +232,17 @@ impl<W: Weight> Dijkstra<W> {
                 // Note that this should only happen due to floating-point precision errors. If
                 // there is a logic error in some part of the code, this method might nullify the
                 // error unknowingly
+                #[cfg(not(feature = "hops"))]
                 let top = W::from_radix(self.heap.top().unwrap());
+                #[cfg(feature = "hops")]
+                let top = W::from_radix(self.heap.top().unwrap().0);
+
                 cost.round_up(top);
                 if self.visit_states.queue_node(succ, cost) {
+                    #[cfg(not(feature = "hops"))]
                     self.heap.push(W::to_radix(cost), succ);
+                    #[cfg(feature = "hops")]
+                    self.heap.push((W::to_radix(cost), Reverse(hops + 1)), succ);
                 }
             }
         }

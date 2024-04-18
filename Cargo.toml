@@ -15,3 +15,4 @@ structopt = "0.3.26"
 
 [features]
 bf_test = [] # Cross-Check Rejections with the naive BF implementation
+hops = [] # Additionally log the hop-distance of negative weight cycles found by Dijkstra to stdout
