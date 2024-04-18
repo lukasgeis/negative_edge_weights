@@ -87,7 +87,7 @@ fn run<W: Weight>(params: Parameters) {
         Source::Gnp { nodes, avg_deg } => {
             assert!(nodes > 1 && avg_deg > 0.0);
             let prob = avg_deg / (nodes as f64);
-            Graph::gen_gnp(&mut rng, nodes, prob, W::from_f64(params.max_weight) )
+            Graph::gen_gnp(&mut rng, nodes, prob, W::from_f64(params.max_weight))
         }
     };
     println!(
