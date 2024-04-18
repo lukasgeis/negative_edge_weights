@@ -18,7 +18,7 @@ mod dijkstra;
 mod graph;
 mod weight;
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Debug, Clone)]
 struct Parameters {
     #[structopt(subcommand)]
     source: Source,
@@ -49,7 +49,7 @@ struct Parameters {
     check: bool,
 }
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Debug, Clone)]
 enum Source {
     Gnp {
         #[structopt(short = "n")]
@@ -65,17 +65,18 @@ fn main() {
     assert!(params.min_weight < params.max_weight);
     assert!(params.rounds_per_edge > 0.0);
 
+    let skip_store = false;
     match params.weight_type {
-        WeightType::F32 => run::<f32>(params),
-        WeightType::F64 => run::<f64>(params),
-        WeightType::I8 => run::<i8>(params),
-        WeightType::I16 => run::<i16>(params),
-        WeightType::I32 => run::<i32>(params),
-        WeightType::I64 => run::<i64>(params),
+        WeightType::F32 => run::<f32>(params, skip_store),
+        WeightType::F64 => run::<f64>(params, skip_store),
+        WeightType::I8 => run::<i8>(params, skip_store),
+        WeightType::I16 => run::<i16>(params, skip_store),
+        WeightType::I32 => run::<i32>(params, skip_store),
+        WeightType::I64 => run::<i64>(params, skip_store),
     };
 }
 
-fn run<W: Weight>(params: Parameters) {
+fn run<W: Weight>(params: Parameters, skip_store: bool) {
     let mut rng = if let Some(seed) = params.seed {
         Pcg64::seed_from_u64(seed)
     } else {
@@ -131,16 +132,18 @@ fn run<W: Weight>(params: Parameters) {
         graph.frac_negative_edges() * 100.0,
     );
 
-    timer = Instant::now();
-    if let Some(path) = params.output {
-        let file_handle = File::create(path).expect("Unable to create file");
-        let mut writer = BufWriter::new(file_handle);
-        graph.store_graph(&mut writer)
-    } else {
-        graph.store_graph(&mut ::std::io::stderr())
+    if !skip_store {
+        timer = Instant::now();
+        if let Some(path) = params.output {
+            let file_handle = File::create(path).expect("Unable to create file");
+            let mut writer = BufWriter::new(file_handle);
+            graph.store_graph(&mut writer)
+        } else {
+            graph.store_graph(&mut ::std::io::stderr())
+        }
+        .unwrap();
+        println!("Graph stored in {}ms", timer.elapsed().as_millis());
     }
-    .unwrap();
-    println!("Graph stored in {}ms", timer.elapsed().as_millis());
 }
 
 /// Runs the MCMC on the graph with the specified parameters
@@ -187,6 +190,34 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
                 );
                 graph.update_weight(idx, old_weight);
             }
+        }
+    }
+}
+
+#[cfg(feature = "bf_test")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dijkstra_vs_bf() {
+        for (a, b) in [(-1.0, 1.0), (-2.0, 5.0), (-3.0, 10.0)] {
+            let params = Parameters {
+                source: Source::Gnp {
+                    nodes: 100,
+                    avg_deg: 5.0,
+                },
+                min_weight: a,
+                max_weight: b,
+                weight_type: WeightType::F64,
+                rounds_per_edge: 5.0,
+                seed: Some(1234),
+                output: None,
+                check: true,
+            };
+
+            run::<i64>(params.clone(), true);
+            run::<f64>(params, true);
         }
     }
 }
