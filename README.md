@@ -12,7 +12,13 @@ After that navigate to this directory and run:
 cargo build --release
 ```
 
+Alternatively, you can compile with the feature-flag `bf_test` to cross check results with the naive implementation of the MCMC:
+```bash
+cargo build --release --features bf_test 
+```
+
 The binary then can be found under `target/release/random_negative_weights`.
+
 
 ## Using the tool
 
@@ -33,8 +39,9 @@ OPTIONS:
     -o <output>                 Output path; if no specified, the graph is dumped to STDERR
     -r <rounds-per-edge>        Carry out m * rounds_per_edge MCMC update steps; if rounds_per_edge is negative, iterate
                                 over all edges in random order and set to smallest weight possible [default: 1]
+    -t <type>                   The primitive type of edge weights: can be any signed integer or float [default: f64]
     --check                     Run additional NegativeCycleDetector checks before and after the MCMC 
-    -s <seed>                   
+    -s <seed>                   Optional starting seed for the RNG 
 
 SUBCOMMANDS:
     gnp     
@@ -62,4 +69,6 @@ random_negative_weights -s 1234 -w=-3 -W 10 -r 100 gnp -n 100 -d 4
 ```
 
 When specifying negative values please use `-w=-10` instead of `-w -10` to allow the command line argument parser to distinguish it from other input parameters.
+
+
 
