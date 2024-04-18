@@ -158,12 +158,34 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
         let potential_weight = graph.potential_weight((u, v, weight));
         if potential_weight >= W::zero() {
             graph.update_weight(idx, weight);
+            #[cfg(feature = "bf_test")]
+            assert!(
+                !has_negative_cycle(graph),
+                "BF found a negative weight cycle when Dijkstra accepted directly"
+            );
             continue;
         }
 
         if let Some(shortest_path_tree) = dijkstra.run(graph, v, u, -potential_weight) {
+            graph.update_weight(idx, weight);
             for (node, dist) in shortest_path_tree {
                 *graph.potential_mut(node) -= potential_weight + dist;
+            }
+            #[cfg(feature = "bf_test")]
+            assert!(
+                !has_negative_cycle(graph),
+                "BF found a negative weight cycle when Dijkstra accepted"
+            );
+        } else {
+            #[cfg(feature = "bf_test")]
+            {
+                let old_weight = graph.weight(idx);
+                graph.update_weight(idx, weight);
+                assert!(
+                    has_negative_cycle(graph),
+                    "BF found no negative weight cycle when Dijkstra rejected"
+                );
+                graph.update_weight(idx, old_weight);
             }
         }
     }

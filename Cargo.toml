@@ -12,3 +12,6 @@ rand = "0.8.5"
 rand_distr = "0.4.3"
 rand_pcg = "0.3.1"
 structopt = "0.3.26"
+
+[features]
+bf_test = [] # Cross-Check Rejections with the naive BF implementation

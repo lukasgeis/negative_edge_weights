@@ -62,6 +62,13 @@ impl<W: Weight> Graph<W> {
         self.edges[idx].2 = weight;
     }
 
+    /// Gets the weight of edge at index `idx`
+    #[allow(unused)]
+    #[inline]
+    pub fn weight(&self, idx: usize) -> W {
+        self.edges[idx].2
+    }
+
     /// Creates a graph using an edge list and the number of nodes. Since we need `edges` to be
     /// sorted, we can specify whether it already is to skip another sort
     pub fn from_edge_list(n: usize, mut edges: Vec<Edge<W>>, sorted: bool) -> Self {
