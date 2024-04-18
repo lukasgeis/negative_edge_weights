@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
 
 use dijkstra::Dijkstra;
@@ -151,6 +153,7 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
         graph.frac_negative_edges() * 100.0,
     );
 
+    #[cfg(not(feature = "hops"))]
     if !skip_store {
         timer = Instant::now();
         if let Some(path) = params.output {
@@ -161,7 +164,6 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
             graph.store_graph(&mut ::std::io::stderr())
         }
         .unwrap();
-        #[cfg(not(feature = "hops"))]
         println!("Graph stored in {}ms", timer.elapsed().as_millis());
     }
 }

@@ -2,3 +2,4 @@ target
 *.gr
 *.svg
 *perf*
+data
