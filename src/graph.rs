@@ -137,6 +137,30 @@ impl<W: Weight> Graph<W> {
         Self::from_edge_list(n, edges, true)
     }
 
+    /// Generates a complete graph with `n` nodes and possible self loops
+    #[inline]
+    pub fn gen_complete(n: usize, self_loops: bool, default_weight: W) -> Self {
+        let edges = (0..n)
+            .flat_map(|u| {
+                (0..n).filter_map(move |v| {
+                    if self_loops || u != v {
+                        Some((u, v, default_weight))
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect();
+        Self::from_edge_list(n, edges, true)
+    }
+
+    /// Generates a cycle of `n` nodes
+    #[inline]
+    pub fn gen_cycle(n: usize, default_weight: W) -> Self {
+        let edges = (0..n).map(|u| (u, (u + 1) % n, default_weight)).collect();
+        Self::from_edge_list(n, edges, true)
+    }
+
     /// Returns the average weight in the graph
     #[inline]
     pub fn avg_weight(&self) -> f64 {

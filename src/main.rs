@@ -58,6 +58,17 @@ enum Source {
         #[structopt(short = "d")]
         avg_deg: f64,
     },
+    Complete {
+        #[structopt(short = "n")]
+        nodes: Node,
+
+        #[structopt(short = "l", long)]
+        loops: bool,
+    },
+    Cycle {
+        #[structopt(short = "n")]
+        nodes: Node,
+    },
 }
 
 fn main() {
@@ -84,12 +95,15 @@ fn run<W: Weight>(params: Parameters, skip_store: bool) {
     };
 
     let mut timer = Instant::now();
+    let default_weight = W::from_f64(params.max_weight);
     let mut graph: Graph<W> = match params.source {
         Source::Gnp { nodes, avg_deg } => {
             assert!(nodes > 1 && avg_deg > 0.0);
             let prob = avg_deg / (nodes as f64);
-            Graph::gen_gnp(&mut rng, nodes, prob, W::from_f64(params.max_weight))
+            Graph::gen_gnp(&mut rng, nodes, prob, default_weight)
         }
+        Source::Complete { nodes, loops } => Graph::gen_complete(nodes, loops, default_weight),
+        Source::Cycle { nodes } => Graph::gen_cycle(nodes, default_weight),
     };
     #[cfg(not(feature = "hops"))]
     println!(

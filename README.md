@@ -44,11 +44,13 @@ OPTIONS:
     -s <seed>                   Optional starting seed for the RNG 
 
 SUBCOMMANDS:
-    gnp     
+    gnp    
+    complete
+    cycle
     help    Prints this message or the help of the given subcommand(s)
 ```
 
-The last part of each command specified the data source. Currently only `gnp` is implemented:
+The last part of each command specified the data source. Currently only `gnp`, `complete`, and `cycle` are implemented:
 
 `random_negative_weights -s 1234 gnp -n 1000 -d 10` will produce a graph with 1000 nodes and an expected average
 degree of 10 (i.e. we compute as `p=d/(n-1)`) using a fixed seed of `1234`. Since the seed is fixed, multiple runs
