@@ -149,6 +149,7 @@ pub struct Dijkstra<W: Weight> {
     heap: RadixHeapMap<(<W as Weight>::RadixWeight, Reverse<usize>), Node>,
     /// Stores which nodes have already been visited in which total distance
     visit_states: VisitedDistances<W>,
+    zero_nodes: Vec<Node>,
 }
 
 impl<W: Weight> Dijkstra<W> {
@@ -158,6 +159,7 @@ impl<W: Weight> Dijkstra<W> {
         Self {
             heap: RadixHeapMap::new(),
             visit_states: VisitedDistances::new(n),
+            zero_nodes: Vec::new(),
         }
     }
 
@@ -182,6 +184,7 @@ impl<W: Weight> Dijkstra<W> {
 
         self.visit_states.reset();
         self.heap.clear();
+        self.zero_nodes.clear();
 
         self.visit_states.queue_node(source_node, W::zero());
         #[cfg(not(feature = "hops"))]
@@ -190,59 +193,70 @@ impl<W: Weight> Dijkstra<W> {
         self.heap
             .push((W::to_radix(W::zero()), Reverse(0)), source_node);
 
-        while let Some((dist, node)) = self.heap.pop() {
-            if self.visit_states.is_visited(node) {
-                continue;
-            }
-
-            self.visit_states.visit_node(node);
-
-            #[cfg(feature = "hops")]
-            let (dist, hops) = dist;
-            #[cfg(feature = "hops")]
-            let hops = hops.0;
-
+        while let Some((dist, heap_node)) = self.heap.pop() {
+            self.zero_nodes.push(heap_node);
             let dist = W::from_radix(dist);
 
-            for (_, succ, weight) in graph.neighbors(node) {
-                let succ = *succ;
-                if self.visit_states.is_visited(succ) {
+            while let Some(node) = self.zero_nodes.pop() {
+                if self.visit_states.is_visited(node) {
                     continue;
                 }
 
-                let mut next = graph.potential_weight((node, succ, *weight));
-                next.round_up(W::zero());
+                self.visit_states.visit_node(node);
 
-                let mut cost = dist + next;
-                cost.round_up(W::zero());
-                if cost > max_distance {
-                    continue;
-                }
-
-                if succ == target_node && cost < max_distance {
-                    #[cfg(feature = "hops")]
-                    println!("{}", hops + 1);
-                    return None;
-                }
-
-                // `RadixHeapMap` panics if the inserted value is greater than the last popped
-                // value `top`. Due to floating-point precision, this can throw unwanted errors that we
-                // can prevent by rounding `cost` to `top` if `top` is greater.
-                //
-                // Note that this should only happen due to floating-point precision errors. If
-                // there is a logic error in some part of the code, this method might nullify the
-                // error unknowingly
-                #[cfg(not(feature = "hops"))]
-                let top = W::from_radix(self.heap.top().unwrap());
                 #[cfg(feature = "hops")]
-                let top = W::from_radix(self.heap.top().unwrap().0);
+                let (dist, hops) = dist;
+                #[cfg(feature = "hops")]
+                let hops = hops.0;
 
-                cost.round_up(top);
-                if self.visit_states.queue_node(succ, cost) {
+                for (_, succ, weight) in graph.neighbors(node) {
+                    let succ = *succ;
+                    if self.visit_states.is_visited(succ) {
+                        continue;
+                    }
+
+                    let mut next = graph.potential_weight((node, succ, *weight));
+                    next.round_up(W::zero());
+
+                    if next == W::zero() && self.visit_states.queue_node(succ, dist) {
+                        if succ == target_node && dist < max_distance {
+                            return None;
+                        }
+                        self.zero_nodes.push(succ);
+                        continue;
+                    }
+
+                    let mut cost = dist + next;
+                    cost.round_up(W::zero());
+                    if cost > max_distance {
+                        continue;
+                    }
+
+                    if succ == target_node && cost < max_distance {
+                        #[cfg(feature = "hops")]
+                        println!("{}", hops + 1);
+                        return None;
+                    }
+
+                    // `RadixHeapMap` panics if the inserted value is greater than the last popped
+                    // value `top`. Due to floating-point precision, this can throw unwanted errors that we
+                    // can prevent by rounding `cost` to `top` if `top` is greater.
+                    //
+                    // Note that this should only happen due to floating-point precision errors. If
+                    // there is a logic error in some part of the code, this method might nullify the
+                    // error unknowingly
                     #[cfg(not(feature = "hops"))]
-                    self.heap.push(W::to_radix(cost), succ);
+                    let top = W::from_radix(self.heap.top().unwrap());
                     #[cfg(feature = "hops")]
-                    self.heap.push((W::to_radix(cost), Reverse(hops + 1)), succ);
+                    let top = W::from_radix(self.heap.top().unwrap().0);
+
+                    cost.round_up(top);
+                    if self.visit_states.queue_node(succ, cost) {
+                        #[cfg(not(feature = "hops"))]
+                        self.heap.push(W::to_radix(cost), succ);
+                        #[cfg(feature = "hops")]
+                        self.heap.push((W::to_radix(cost), Reverse(hops + 1)), succ);
+                    }
                 }
             }
         }

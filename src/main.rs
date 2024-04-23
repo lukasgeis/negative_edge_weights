@@ -198,7 +198,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
             }
             #[cfg(feature = "bf_test")]
             assert!(
-                !has_negative_cycle(graph),
+                !has_negative_cycle(graph) && graph.is_feasible(),
                 "BF found a negative weight cycle when Dijkstra accepted"
             );
         } else {

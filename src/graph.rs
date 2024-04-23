@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{fmt::Debug, io::Write};
 
 use rand::Rng;
 use rand_distr::Geometric;
@@ -8,7 +8,7 @@ use crate::weight::Weight;
 pub type Node = usize;
 pub type Edge<W> = (Node, Node, W);
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Graph<W: Weight> {
     /// List of all edges sorted by source node
     edges: Vec<Edge<W>>,
@@ -178,6 +178,24 @@ impl<W: Weight> Graph<W> {
     pub fn store_graph<WB: Write>(&self, writer: &mut WB) -> std::io::Result<()> {
         for (u, v, w) in &self.edges {
             writeln!(writer, "{u},{v},{w}")?
+        }
+        Ok(())
+    }
+}
+
+impl<W: Weight> Debug for Graph<W> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "\n<== Graph with {} nodes and {} edges ==>\n\nEdge = (source, target, weight, potential weight)", self.n(), self.m())?;
+        for u in 0..self.n() {
+            write!(f, "Outgoing edges from {u} => ")?;
+            for (_, v, w) in self.neighbors(u) {
+                write!(
+                    f,
+                    "  ({u}, {v}, {w}, {})",
+                    self.potential_weight((u, *v, *w))
+                )?;
+            }
+            writeln!(f)?;
         }
         Ok(())
     }
