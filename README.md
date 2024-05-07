@@ -36,7 +36,7 @@ FLAGS:
 OPTIONS:
     -W <max-weight>              [default: 1]
     -w <min-weight>              [default: -1]
-    -o <output>                 Output path; if no specified, the graph is dumped to STDERR
+    -o <output>                 Optional Output Path
     -r <rounds-per-edge>        Carry out m * rounds_per_edge MCMC update steps; if rounds_per_edge is negative, iterate
                                 over all edges in random order and set to smallest weight possible [default: 1]
     -t <type>                   The primitive type of edge weights: can be any signed integer or float [default: f64]
