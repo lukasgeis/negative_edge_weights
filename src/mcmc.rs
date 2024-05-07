@@ -87,6 +87,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
         W::from_f64(params.min_weight),
         W::from_f64(params.max_weight),
     );
+
     for _ in 0..num_rounds {
         let (idx, (u, v, _)) = graph.random_edge(rng);
         let weight = sampler.sample(rng);
@@ -94,6 +95,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
         let potential_weight = graph.potential_weight((u, v, weight));
         if potential_weight >= W::zero() {
             graph.update_weight(idx, weight);
+           
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph),
@@ -107,6 +109,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
             for (node, dist) in shortest_path_tree {
                 *graph.potential_mut(node) -= potential_weight + dist;
             }
+            
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph) && graph.is_feasible(),
