@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn run<W: Weight>(params: Parameters) {
+pub(crate) fn run<W: Weight>(params: Parameters) {
     let mut rng = if let Some(seed) = params.seed {
         Pcg64::seed_from_u64(seed)
     } else {
@@ -18,7 +18,8 @@ pub fn run<W: Weight>(params: Parameters) {
         Source::Complete { nodes, loops } => Graph::gen_complete(nodes, loops, default_weight),
         Source::Cycle { nodes } => Graph::gen_cycle(nodes, default_weight),
     };
-    #[cfg(not(feature = "hops"))]
+
+    #[cfg(not(feature = "no_print"))]
     println!(
         "Loaded graph with {} nodes and {} edges in {}ms",
         graph.n(),
@@ -32,7 +33,8 @@ pub fn run<W: Weight>(params: Parameters) {
             !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
             "Starting Graph has negative weight cycle"
         );
-        #[cfg(not(feature = "hops"))]
+
+        #[cfg(not(feature = "no_print"))]
         println!(
             "NegativeCycleFinder run on starting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
@@ -41,7 +43,8 @@ pub fn run<W: Weight>(params: Parameters) {
 
     timer = Instant::now();
     run_mcmc(&mut rng, &mut graph, &params);
-    #[cfg(not(feature = "hops"))]
+
+    #[cfg(not(feature = "no_print"))]
     println!("MCMC run in {}ms", timer.elapsed().as_millis());
 
     if params.check {
@@ -50,26 +53,28 @@ pub fn run<W: Weight>(params: Parameters) {
             !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
             "Resulting Graph has negative weight cycle"
         );
-        #[cfg(not(feature = "hops"))]
+
+        #[cfg(not(feature = "no_print"))]
         println!(
             "NegativeCycleFinder run on resulting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
         );
     }
 
-    #[cfg(not(feature = "hops"))]
+    #[cfg(not(feature = "no_print"))]
     println!(
         "Avg. Edge Weight: {}\nFraction of negative edges: {:.1}%",
         graph.avg_weight(),
         graph.frac_negative_edges() * 100.0,
     );
 
-    #[cfg(not(feature = "hops"))]
     if let Some(path) = params.output {
         timer = Instant::now();
         let file_handle = File::create(path).expect("Unable to create file");
         let mut writer = BufWriter::new(file_handle);
         graph.store_graph(&mut writer).unwrap();
+
+        #[cfg(not(feature = "no_print"))]
         println!("Graph stored in {}ms", timer.elapsed().as_millis());
     }
 }

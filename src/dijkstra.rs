@@ -147,9 +147,15 @@ pub struct Dijkstra<W: Weight> {
     heap: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
     #[cfg(feature = "hops")]
     heap: RadixHeapMap<(<W as Weight>::RadixWeight, Reverse<usize>), Node>,
+
     /// Stores which nodes have already been visited in which total distance
     visit_states: VisitedDistances<W>,
+
+    #[cfg(not(feature = "hops"))]
     zero_nodes: Vec<Node>,
+
+    #[cfg(feature = "hops")]
+    zero_nodes: Vec<(Node, usize)>,
 }
 
 impl<W: Weight> Dijkstra<W> {
@@ -179,6 +185,7 @@ impl<W: Weight> Dijkstra<W> {
         if source_node == target_node {
             #[cfg(feature = "hops")]
             println!("0");
+
             return None;
         }
 
@@ -187,27 +194,38 @@ impl<W: Weight> Dijkstra<W> {
         self.zero_nodes.clear();
 
         self.visit_states.queue_node(source_node, W::zero());
+
         #[cfg(not(feature = "hops"))]
         self.heap.push(W::to_radix(W::zero()), source_node);
+
         #[cfg(feature = "hops")]
         self.heap
             .push((W::to_radix(W::zero()), Reverse(0)), source_node);
 
         while let Some((dist, heap_node)) = self.heap.pop() {
-            self.zero_nodes.push(heap_node);
+            #[cfg(feature = "hops")]
+            let (dist, hops) = dist;
+
+            #[cfg(feature = "hops")]
+            let hops = hops.0;
+
             let dist = W::from_radix(dist);
 
+            #[cfg(not(feature = "hops"))]
+            self.zero_nodes.push(heap_node);
+
+            #[cfg(feature = "hops")]
+            self.zero_nodes.push((heap_node, hops));
+
             while let Some(node) = self.zero_nodes.pop() {
+                #[cfg(feature = "hops")]
+                let (node, nhops) = node;
+
                 if self.visit_states.is_visited(node) {
                     continue;
                 }
 
                 self.visit_states.visit_node(node);
-
-                #[cfg(feature = "hops")]
-                let (dist, hops) = dist;
-                #[cfg(feature = "hops")]
-                let hops = hops.0;
 
                 for (_, succ, weight) in graph.neighbors(node) {
                     let succ = *succ;
@@ -222,7 +240,13 @@ impl<W: Weight> Dijkstra<W> {
                         if succ == target_node && dist < max_distance {
                             return None;
                         }
+
+                        #[cfg(not(feature = "hops"))]
                         self.zero_nodes.push(succ);
+
+                        #[cfg(feature = "hops")]
+                        self.zero_nodes.push((succ, nhops + 1));
+
                         continue;
                     }
 
@@ -234,7 +258,8 @@ impl<W: Weight> Dijkstra<W> {
 
                     if succ == target_node && cost < max_distance {
                         #[cfg(feature = "hops")]
-                        println!("{}", hops + 1);
+                        println!("{}", nhops + 1);
+
                         return None;
                     }
 
@@ -247,6 +272,7 @@ impl<W: Weight> Dijkstra<W> {
                     // error unknowingly
                     #[cfg(not(feature = "hops"))]
                     let top = W::from_radix(self.heap.top().unwrap());
+
                     #[cfg(feature = "hops")]
                     let top = W::from_radix(self.heap.top().unwrap().0);
 
@@ -254,8 +280,10 @@ impl<W: Weight> Dijkstra<W> {
                     if self.visit_states.queue_node(succ, cost) {
                         #[cfg(not(feature = "hops"))]
                         self.heap.push(W::to_radix(cost), succ);
+
                         #[cfg(feature = "hops")]
-                        self.heap.push((W::to_radix(cost), Reverse(hops + 1)), succ);
+                        self.heap
+                            .push((W::to_radix(cost), Reverse(nhops + 1)), succ);
                     }
                 }
             }
