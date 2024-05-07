@@ -16,4 +16,6 @@ structopt = "0.3.26"
 [features]
 no_print = [] # Do not print standard outputs - this feature should be used as a sub-feature
 bf_test = [] # Cross-Check Rejections with the naive BF implementation
-hops = ["no_print"] # Additionally log the hop-distance of negative weight cycles found by Dijkstra to stdout
+hops = ["no_print"] # Log the hop-distance of negative weight cycles found by Dijkstra to stdout
+dfs_size = ["no_print"] # Log the number of traversed zero edges in Dijkstra 
+bidir = [] # Run a bidirectional Dijkstra instead

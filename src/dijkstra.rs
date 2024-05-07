@@ -217,6 +217,9 @@ impl<W: Weight> Dijkstra<W> {
             #[cfg(feature = "hops")]
             self.zero_nodes.push((heap_node, hops));
 
+            #[cfg(feature = "dfs_size")]
+            let mut dfs = 0usize;
+
             while let Some(node) = self.zero_nodes.pop() {
                 #[cfg(feature = "hops")]
                 let (node, nhops) = node;
@@ -246,6 +249,9 @@ impl<W: Weight> Dijkstra<W> {
 
                         #[cfg(feature = "hops")]
                         self.zero_nodes.push((succ, nhops + 1));
+
+                        #[cfg(feature = "dfs_size")]
+                        { dfs += 1; }
 
                         continue;
                     }
@@ -287,6 +293,9 @@ impl<W: Weight> Dijkstra<W> {
                     }
                 }
             }
+
+            #[cfg(feature = "dfs_size")]
+            println!("{dfs}");
         }
 
         Some(self.visit_states.get_distances())

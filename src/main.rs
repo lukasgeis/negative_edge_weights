@@ -1,5 +1,11 @@
 #![allow(unused)]
 
+#[cfg(all(feature = "hops", feature = "dfs_size"))]
+compile_error!("Features `hops` and `dfs_size` are mutually exclusive!");
+
+#[cfg(all(feature = "bidir", any(feature = "hops", feature = "dfs_size")))]
+compile_error!("Features `bidir` and `hops`, `dfs_size` are mutually exclusive!");
+
 use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
 
 use dijkstra::Dijkstra;
@@ -21,6 +27,7 @@ mod dijkstra;
 mod graph;
 mod mcmc;
 mod weight;
+mod bidirectional;
 
 #[derive(StructOpt, Debug, Clone)]
 struct Parameters {
