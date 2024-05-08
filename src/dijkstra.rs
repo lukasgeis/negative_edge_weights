@@ -30,8 +30,7 @@ impl<W: Weight> VisitedDistances<W> {
     pub fn new(n: usize) -> Self {
         Self {
             visit_map: vec![VisitState::Unvisited; n],
-            // Might be beneficial to initialize with capacity `n` to prevent ever reallocating
-            seen_nodes: Vec::new(),
+            seen_nodes: Vec::with_capacity(n),
         }
     }
 

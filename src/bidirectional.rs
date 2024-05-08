@@ -2,31 +2,43 @@ use radix_heap::RadixHeapMap;
 
 use crate::{graph::*, weight::Weight};
 
+/// Possible VisitStates of a single node in the bidirectional search
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum VisitState<W: Weight> {
+    /// The node has not been found in either search
     Unvisited,
+    /// The node has been queued in the forward-search
     QueuedForward(W),
+    /// The node has been found in the backward-search
     QueuedBackward(W),
+    /// The node has been queued in both searches    
     DoubleQueued(W, W),
+    /// The node has been visited in the forward-search
     VisitedForward(W),
+    /// The node has been visited in the backward-search
     VisitedBackward(W),
 }
 
+/// Keep track of all VisitStates
 #[derive(Debug, Clone)]
 struct VisitedDistances<W: Weight> {
+    /// VisitStates of all nodes
     visit_map: Vec<VisitState<W>>,
+    /// Vector of all seen nodes: might be faster for `o(n)` nodes
     seen_nodes: Vec<Node>,
 }
 
 impl<W: Weight> VisitedDistances<W> {
+    /// Creates a new instance
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
             visit_map: vec![VisitState::Unvisited; n],
-            seen_nodes: Vec::new(),
+            seen_nodes: Vec::with_capacity(n),
         }
     }
 
+    /// Visits a node in the forward-search
     #[inline]
     pub fn visit_node_forward(&mut self, node: Node) {
         match self.visit_map[node] {
@@ -40,6 +52,7 @@ impl<W: Weight> VisitedDistances<W> {
         };
     }
 
+    /// Visits a node in the backward-search
     #[inline]
     pub fn visit_node_backward(&mut self, node: Node) {
         match self.visit_map[node] {
@@ -53,6 +66,7 @@ impl<W: Weight> VisitedDistances<W> {
         };
     }
 
+    /// Returns *true* if the node has been visited in any search
     #[inline]
     pub fn is_visited(&self, node: Node) -> bool {
         matches!(
@@ -61,6 +75,10 @@ impl<W: Weight> VisitedDistances<W> {
         )
     }
 
+    /// Queues a node in the forward-search
+    ///
+    /// Returns `Some(bool)` if the queue was allowed and did go through/did not go through.
+    /// Returns `None` if we have found a negative weight cycle
     #[inline]
     pub fn queue_node_forward(&mut self, node: Node, distance: W, max_distance: W) -> Option<bool> {
         match self.visit_map[node] {
@@ -108,6 +126,10 @@ impl<W: Weight> VisitedDistances<W> {
         }
     }
 
+    /// Queues a node in the backward-search
+    ///
+    /// Returns `Some(bool)` if the queue was allowed and did go through/did not go through.
+    /// Returns `None` if we have found a negative weight cycle
     #[inline]
     pub fn queue_node_backward(
         &mut self,
@@ -182,6 +204,8 @@ impl<W: Weight> VisitedDistances<W> {
         }
     }
 
+    /// Returns the node-distance pairs of all visited nodes.
+    /// For nodes visited in the backward-search, we set the node-value to `node + n`
     pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, W)> + '_ {
         if self.is_asymptotically_full() {
             DoubleIterator::IterA(
@@ -232,13 +256,18 @@ where
     }
 }
 
+/// Bidirectional Dijkstra
 pub struct BiDijkstra<W: Weight> {
+    /// The Maxheap for the forward-search
     heapf: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
+    /// The Maxheap for the backward-search
     heapb: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
+    /// The VisitStates of all nodes
     visit_states: VisitedDistances<W>,
 }
 
 impl<W: Weight> BiDijkstra<W> {
+    /// Creates a new instance
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
@@ -248,6 +277,13 @@ impl<W: Weight> BiDijkstra<W> {
         }
     }
 
+    /// Runs bidirectional dijkstra on the given graph.
+    ///
+    /// Returns `None` if there exists a path from `source_node` to `target_node` with distance
+    /// less than `max_distance`.
+    /// Otherwise, return `Some(((df, db), it))` where `df` is the maximum visited distance in the
+    /// forward-search, `db` the maximum visited distance in the backward-search and `it` an
+    /// iterator over the node-distance pairs in the shortest path trees
     pub fn run(
         &mut self,
         graph: &Graph<W>,
