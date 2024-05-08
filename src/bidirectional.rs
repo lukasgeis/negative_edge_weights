@@ -367,6 +367,11 @@ impl<W: Weight> BiDijkstra<W> {
                     }
                 }
             }
+
+            if self.heapf.is_empty() && self.heapb.is_empty() {
+                df = max_distance - db;
+                break;
+            }
         }
 
         Some(((df, db), self.visit_states.get_distances()))
