@@ -23,11 +23,15 @@ use mcmc::*;
 use weight::{Weight, WeightType};
 
 mod bellman_ford;
+#[cfg(feature = "bidir")]
+mod bidirectional;
+#[cfg(feature = "bidir")]
+pub use bidirectional::BiDijkstra;
+
 mod dijkstra;
 mod graph;
 mod mcmc;
 mod weight;
-mod bidirectional;
 
 #[derive(StructOpt, Debug, Clone)]
 struct Parameters {

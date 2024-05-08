@@ -49,7 +49,6 @@ impl<W: Weight> Graph<W> {
         &self.rev_edges[self.rev_limits[u]..self.rev_limits[u + 1]]
     }
 
-
     /// Returns a mutable reference of a node potential
     #[inline]
     pub fn potential_mut(&mut self, u: Node) -> &mut W {
@@ -81,7 +80,7 @@ impl<W: Weight> Graph<W> {
                 if self.rev_edges[i].0 == u {
                     self.rev_edges[i].2 = weight;
                     break;
-                } 
+                }
             }
         }
     }
@@ -116,17 +115,18 @@ impl<W: Weight> Graph<W> {
         #[cfg(feature = "bidir")]
         let (rev_edges, rev_limits) = {
             let mut rev_edges = edges.clone();
-            edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (v1, u1).cmp(&(v2, u2)));
+            rev_edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (v1, u1).cmp(&(v2, u2)));
 
+            curr_edge = 0;
             let rev_limits: Vec<usize> = (0..n)
-            .map(|i| {
-                while curr_edge < edges.len() && edges[curr_edge].1 < i {
-                    curr_edge += 1;
-                }
-                curr_edge
-            })
-            .chain(std::iter::once(edges.len()))
-            .collect();
+                .map(|i| {
+                    while curr_edge < rev_edges.len() && rev_edges[curr_edge].1 < i {
+                        curr_edge += 1;
+                    }
+                    curr_edge
+                })
+                .chain(std::iter::once(rev_edges.len()))
+                .collect();
 
             (rev_edges, rev_limits)
         };

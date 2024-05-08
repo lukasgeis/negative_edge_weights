@@ -42,7 +42,11 @@ pub(crate) fn run<W: Weight>(params: Parameters) {
     }
 
     timer = Instant::now();
+    #[cfg(not(feature = "bidir"))]
     run_mcmc(&mut rng, &mut graph, &params);
+
+    #[cfg(feature = "bidir")]
+    run_mcmc_bidirectional(&mut rng, &mut graph, &params);
 
     #[cfg(not(feature = "no_print"))]
     println!("MCMC run in {}ms", timer.elapsed().as_millis());
@@ -95,7 +99,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
         let potential_weight = graph.potential_weight((u, v, weight));
         if potential_weight >= W::zero() {
             graph.update_weight(idx, weight);
-           
+
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph),
@@ -109,7 +113,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
             for (node, dist) in shortest_path_tree {
                 *graph.potential_mut(node) -= potential_weight + dist;
             }
-            
+
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph) && graph.is_feasible(),
@@ -123,6 +127,64 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
                 assert!(
                     has_negative_cycle(graph),
                     "BF found no negative weight cycle when Dijkstra rejected"
+                );
+                graph.update_weight(idx, old_weight);
+            }
+        }
+    }
+}
+
+#[cfg(feature = "bidir")]
+fn run_mcmc_bidirectional<W: Weight>(
+    rng: &mut impl Rng,
+    graph: &mut Graph<W>,
+    params: &Parameters,
+) {
+    let num_rounds = (graph.m() as f64 * params.rounds_per_edge).ceil() as u64;
+    let mut dijkstra = BiDijkstra::new(graph.n());
+    let sampler = Uniform::new(
+        W::from_f64(params.min_weight),
+        W::from_f64(params.max_weight),
+    );
+
+    for _ in 0..num_rounds {
+        let (idx, (u, v, w)) = graph.random_edge(rng);
+        let weight = sampler.sample(rng);
+
+        let potential_weight = graph.potential_weight((u, v, weight));
+        if potential_weight >= W::zero() {
+            graph.update_weight(idx, weight);
+            #[cfg(feature = "bf_test")]
+            assert!(
+                !has_negative_cycle(graph),
+                "BF found a negative weight cycle when BiDijkstra accepted directly"
+            );
+            continue;
+        }
+
+        if let Some(((df, db), shortest_path_tree)) = dijkstra.run(graph, v, u, -potential_weight) {
+            graph.update_weight(idx, weight);
+            for (node, dist) in shortest_path_tree {
+                if node < graph.n() {
+                    *graph.potential_mut(node) += df - dist;
+                } else {
+                    *graph.potential_mut(node - graph.n()) -= db - dist;
+                }
+            }
+
+            #[cfg(feature = "bf_test")]
+            assert!(
+                !has_negative_cycle(graph) && graph.is_feasible(),
+                "BF found a negative weight cycle when BiDijkstra accepted"
+            );
+        } else {
+            #[cfg(feature = "bf_test")]
+            {
+                let old_weight = graph.weight(idx);
+                graph.update_weight(idx, weight);
+                assert!(
+                    has_negative_cycle(graph),
+                    "BF found no negative weight cycle when BiDijkstra rejected"
                 );
                 graph.update_weight(idx, old_weight);
             }

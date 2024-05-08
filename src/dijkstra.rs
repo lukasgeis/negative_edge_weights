@@ -9,7 +9,7 @@ use crate::{graph::*, weight::Weight};
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum VisitState<W: Weight> {
     /// The node has not been found yet
-    Unvisisted,
+    Unvisited,
     /// The node is in the queue with current value
     Queued(W),
     /// The node was visited with final value
@@ -29,7 +29,7 @@ impl<W: Weight> VisitedDistances<W> {
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
-            visit_map: vec![VisitState::Unvisisted; n],
+            visit_map: vec![VisitState::Unvisited; n],
             // Might be beneficial to initialize with capacity `n` to prevent ever reallocating
             seen_nodes: Vec::new(),
         }
@@ -53,7 +53,7 @@ impl<W: Weight> VisitedDistances<W> {
     #[inline]
     pub fn queue_node(&mut self, node: Node, distance: W) -> bool {
         match self.visit_map[node] {
-            VisitState::Unvisisted => {
+            VisitState::Unvisited => {
                 self.visit_map[node] = VisitState::Queued(distance);
                 self.seen_nodes.push(node);
                 true
@@ -83,11 +83,11 @@ impl<W: Weight> VisitedDistances<W> {
             self.seen_nodes.clear();
             self.visit_map
                 .iter_mut()
-                .for_each(|w| *w = VisitState::Unvisisted);
+                .for_each(|w| *w = VisitState::Unvisited);
         } else {
             self.seen_nodes
                 .iter()
-                .for_each(|u| self.visit_map[*u] = VisitState::Unvisisted);
+                .for_each(|u| self.visit_map[*u] = VisitState::Unvisited);
             self.seen_nodes.clear();
         }
     }
@@ -251,7 +251,9 @@ impl<W: Weight> Dijkstra<W> {
                         self.zero_nodes.push((succ, nhops + 1));
 
                         #[cfg(feature = "dfs_size")]
-                        { dfs += 1; }
+                        {
+                            dfs += 1;
+                        }
 
                         continue;
                     }

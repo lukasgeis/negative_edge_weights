@@ -3,7 +3,7 @@ use std::{
     convert::Infallible,
     fmt::{Debug, Display},
     iter::Sum,
-    ops::{Add, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
 
@@ -22,6 +22,7 @@ pub trait Weight:
     + SampleUniform
     + Add<Output = Self>
     + Sub<Output = Self>
+    + AddAssign
     + SubAssign
     + Neg<Output = Self>
     + Display
