@@ -31,6 +31,7 @@ pub use bidirectional::BiDijkstra;
 mod dijkstra;
 mod graph;
 mod mcmc;
+mod utils;
 mod weight;
 
 #[derive(StructOpt, Debug, Clone)]

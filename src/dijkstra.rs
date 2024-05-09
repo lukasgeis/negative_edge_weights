@@ -3,7 +3,7 @@ use std::cmp::Reverse;
 
 use radix_heap::RadixHeapMap;
 
-use crate::{graph::*, weight::Weight};
+use crate::{graph::*, utils::*, weight::Weight};
 
 /// The state of a node in Dijkstra
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -22,7 +22,7 @@ struct VisitedDistances<W: Weight> {
     visit_map: Vec<VisitState<W>>,
     /// Stores which nodes were reached in this iteration: only beneficial if we have `o(n)` nodes
     /// seen in total
-    seen_nodes: Vec<Node>,
+    seen_nodes: ReusableVec<Node>,
 }
 
 impl<W: Weight> VisitedDistances<W> {
@@ -30,7 +30,7 @@ impl<W: Weight> VisitedDistances<W> {
     pub fn new(n: usize) -> Self {
         Self {
             visit_map: vec![VisitState::Unvisited; n],
-            seen_nodes: Vec::with_capacity(n),
+            seen_nodes: ReusableVec::with_capacity(n),
         }
     }
 
@@ -110,30 +110,6 @@ impl<W: Weight> VisitedDistances<W> {
                     None
                 }
             }))
-        }
-    }
-}
-
-/// Quick hack to allow a function to return two different iterators over the same item
-pub enum DoubleIterator<I, A, B>
-where
-    A: Iterator<Item = I>,
-    B: Iterator<Item = I>,
-{
-    IterA(A),
-    IterB(B),
-}
-
-impl<I, A, B> Iterator for DoubleIterator<I, A, B>
-where
-    A: Iterator<Item = I>,
-    B: Iterator<Item = I>,
-{
-    type Item = I;
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            DoubleIterator::IterA(iter) => iter.next(),
-            DoubleIterator::IterB(iter) => iter.next(),
         }
     }
 }
