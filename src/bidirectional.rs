@@ -182,16 +182,10 @@ impl<W: Weight> VisitedDistances<W> {
         }
     }
 
-    /// Returns *true* if we have seen `Omega(n)` nodes
-    #[inline]
-    fn is_asymptotically_full(&self) -> bool {
-        self.seen_nodes.len() > self.visit_map.len() / 4
-    }
-
     /// Resets the data structure
     #[inline]
     pub fn reset(&mut self) {
-        if self.is_asymptotically_full() {
+        if self.seen_nodes.is_asymptotically_full() {
             self.seen_nodes.clear();
             self.visit_map
                 .iter_mut()
@@ -207,7 +201,7 @@ impl<W: Weight> VisitedDistances<W> {
     /// Returns the node-distance pairs of all visited nodes.
     /// For nodes visited in the backward-search, we set the node-value to `node + n`
     pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, W)> + '_ {
-        if self.is_asymptotically_full() {
+        if self.seen_nodes.is_asymptotically_full() {
             DoubleIterator::IterA(
                 self.visit_map
                     .iter()

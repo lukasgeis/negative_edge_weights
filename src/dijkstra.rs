@@ -69,16 +69,10 @@ impl<W: Weight> VisitedDistances<W> {
         }
     }
 
-    /// Returns *true* if we have seen `Omega(n)` nodes
-    #[inline]
-    fn is_asymptotically_full(&self) -> bool {
-        self.seen_nodes.len() > self.visit_map.len() / 4
-    }
-
     /// Resets the data structure
     #[inline]
     pub fn reset(&mut self) {
-        if self.is_asymptotically_full() {
+        if self.seen_nodes.is_asymptotically_full() {
             self.seen_nodes.clear();
             self.visit_map
                 .iter_mut()
@@ -94,7 +88,7 @@ impl<W: Weight> VisitedDistances<W> {
     /// Returns an iterator over all discovered nodes in the shortest path tree and their total distances  
     #[inline]
     pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, W)> + '_ {
-        if self.is_asymptotically_full() {
+        if self.seen_nodes.is_asymptotically_full() {
             DoubleIterator::IterA(self.visit_map.iter().enumerate().filter_map(|(u, s)| {
                 if let VisitState::Visited(w) = s {
                     Some((u, *w))

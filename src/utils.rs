@@ -25,11 +25,11 @@ where
 /// Small wrapper around `Vec<T>` that is meant to be used for cases where `Vec<T>`
 /// - has a fixed upper bound on its size
 /// - often pushes multiple elements and then clears everything (and repeats...)
-///
-/// This should be a minor optimization which should be `20ms ~ 100ms` faster
 #[derive(Debug, Clone)]
 pub struct ReusableVec<T: Default + Clone> {
+    /// Data
     vec: Vec<T>,
+    /// Current number of elements in `vec`
     len: usize,
 }
 
@@ -73,5 +73,13 @@ impl<T: Default + Clone> ReusableVec<T> {
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
         self.vec[..self.len].iter()
+    }
+
+    /// Returns *true* if we have seen `Omega(n)` nodes
+    ///
+    /// TODO: Replace `4` with better constant
+    #[inline]
+    pub fn is_asymptotically_full(&self) -> bool {
+        self.len > self.vec.len() / 4
     }
 }
