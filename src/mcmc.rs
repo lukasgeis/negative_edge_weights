@@ -21,7 +21,7 @@ pub(crate) fn run<W: Weight>(params: Parameters) {
 
     #[cfg(not(feature = "no_print"))]
     println!(
-        "Loaded graph with {} nodes and {} edges in {}ms",
+        "[INFO] Loaded graph with {} nodes and {} edges in {}ms",
         graph.n(),
         graph.m(),
         timer.elapsed().as_millis(),
@@ -31,12 +31,12 @@ pub(crate) fn run<W: Weight>(params: Parameters) {
         timer = Instant::now();
         assert!(
             !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
-            "Starting Graph has negative weight cycle"
+            "[TEST] Starting Graph has negative weight cycle"
         );
 
         #[cfg(not(feature = "no_print"))]
         println!(
-            "NegativeCycleFinder run on starting graph in {}ms and found no negative cycle",
+            "[TEST] NegativeCycleFinder run on starting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
         );
     }
@@ -49,25 +49,25 @@ pub(crate) fn run<W: Weight>(params: Parameters) {
     run_mcmc_bidirectional(&mut rng, &mut graph, &params);
 
     #[cfg(not(feature = "no_print"))]
-    println!("MCMC run in {}ms", timer.elapsed().as_millis());
+    println!("[INFO] MCMC run in {}ms", timer.elapsed().as_millis());
 
     if params.check {
         timer = Instant::now();
         assert!(
             !has_negative_cycle(&graph), // alternatively we can use `graph.is_feasible()`
-            "Resulting Graph has negative weight cycle"
+            "[TEST] Resulting Graph has negative weight cycle"
         );
 
         #[cfg(not(feature = "no_print"))]
         println!(
-            "NegativeCycleFinder run on resulting graph in {}ms and found no negative cycle",
+            "[TEST] NegativeCycleFinder run on resulting graph in {}ms and found no negative cycle",
             timer.elapsed().as_millis()
         );
     }
 
     #[cfg(not(feature = "no_print"))]
     println!(
-        "Avg. Edge Weight: {}\nFraction of negative edges: {:.1}%",
+        "[INFO] Avg. Edge Weight: {}\n[INFO] Fraction of negative edges: {:.1}%",
         graph.avg_weight(),
         graph.frac_negative_edges() * 100.0,
     );
@@ -79,7 +79,7 @@ pub(crate) fn run<W: Weight>(params: Parameters) {
         graph.store_graph(&mut writer).unwrap();
 
         #[cfg(not(feature = "no_print"))]
-        println!("Graph stored in {}ms", timer.elapsed().as_millis());
+        println!("[INFO] Graph stored in {}ms", timer.elapsed().as_millis());
     }
 }
 
@@ -103,7 +103,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph),
-                "BF found a negative weight cycle when Dijkstra accepted directly"
+                "[TEST] BF found a negative weight cycle when Dijkstra accepted directly"
             );
             continue;
         }
@@ -117,7 +117,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph) && graph.is_feasible(),
-                "BF found a negative weight cycle when Dijkstra accepted"
+                "[TEST] BF found a negative weight cycle when Dijkstra accepted"
             );
         } else {
             #[cfg(feature = "bf_test")]
@@ -126,7 +126,7 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
                 graph.update_weight(idx, weight);
                 assert!(
                     has_negative_cycle(graph),
-                    "BF found no negative weight cycle when Dijkstra rejected"
+                    "[TEST] BF found no negative weight cycle when Dijkstra rejected"
                 );
                 graph.update_weight(idx, old_weight);
             }
@@ -158,7 +158,7 @@ fn run_mcmc_bidirectional<W: Weight>(
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph),
-                "BF found a negative weight cycle when BiDijkstra accepted directly"
+                "[TEST] BF found a negative weight cycle when BiDijkstra accepted directly"
             );
             continue;
         }
@@ -176,7 +176,7 @@ fn run_mcmc_bidirectional<W: Weight>(
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph) && graph.is_feasible(),
-                "BF found a negative weight cycle when BiDijkstra accepted"
+                "[TEST] BF found a negative weight cycle when BiDijkstra accepted"
             );
         } else {
             #[cfg(feature = "bf_test")]
@@ -185,7 +185,7 @@ fn run_mcmc_bidirectional<W: Weight>(
                 graph.update_weight(idx, weight);
                 assert!(
                     has_negative_cycle(graph),
-                    "BF found no negative weight cycle when BiDijkstra rejected"
+                    "[TEST] BF found no negative weight cycle when BiDijkstra rejected"
                 );
                 graph.update_weight(idx, old_weight);
             }
