@@ -12,15 +12,13 @@ pub type Edge<W> = (Node, Node, W);
 pub struct Graph<W: Weight> {
     /// List of all edges sorted by source node
     edges: Vec<Edge<W>>,
-    /// `limits[u]` is the index of the first edge with souce `u` in `edges`
+    /// `limits[u]` is the index of the first edge with source `u` in `edges`
     limits: Vec<usize>,
     /// List of node potentials
     potentials: Vec<W>,
-
-    #[cfg(feature = "bidir")]
+    /// List of all edges sorted by target node
     rev_edges: Vec<Edge<W>>,
-
-    #[cfg(feature = "bidir")]
+    /// `rev_limits[u]` is the index of the first edge with target `u` in `rev_edges`
     rev_limits: Vec<usize>,
 }
 
@@ -43,7 +41,7 @@ impl<W: Weight> Graph<W> {
         &self.edges[self.limits[u]..self.limits[u + 1]]
     }
 
-    #[cfg(feature = "bidir")]
+    /// Returns a slice over all incoming edges to target node `u`
     #[inline]
     pub fn in_neighbors(&self, u: Node) -> &[Edge<W>] {
         &self.rev_edges[self.rev_limits[u]..self.rev_limits[u + 1]]
@@ -73,14 +71,11 @@ impl<W: Weight> Graph<W> {
     pub fn update_weight(&mut self, idx: usize, weight: W) {
         self.edges[idx].2 = weight;
 
-        #[cfg(feature = "bidir")]
-        {
-            let (u, v, _) = self.edges[idx];
-            for i in self.rev_limits[v]..self.rev_limits[v + 1] {
-                if self.rev_edges[i].0 == u {
-                    self.rev_edges[i].2 = weight;
-                    break;
-                }
+        let (u, v, _) = self.edges[idx];
+        for i in self.rev_limits[v]..self.rev_limits[v + 1] {
+            if self.rev_edges[i].0 == u {
+                self.rev_edges[i].2 = weight;
+                break;
             }
         }
     }
@@ -112,7 +107,6 @@ impl<W: Weight> Graph<W> {
             .chain(std::iter::once(edges.len()))
             .collect();
 
-        #[cfg(feature = "bidir")]
         let (rev_edges, rev_limits) = {
             let mut rev_edges = edges.clone();
             rev_edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (v1, u1).cmp(&(v2, u2)));
@@ -136,9 +130,7 @@ impl<W: Weight> Graph<W> {
             edges,
             limits,
             potentials: vec![W::zero(); n],
-            #[cfg(feature = "bidir")]
             rev_edges,
-            #[cfg(feature = "bidir")]
             rev_limits,
         }
     }

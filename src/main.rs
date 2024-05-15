@@ -7,6 +7,7 @@ compile_error!("Features `bidir` and `hops`, `dfs_size` are mutually exclusive!"
 
 use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
 
+use bidirectional::BiDijkstra;
 use dijkstra::Dijkstra;
 use graph::*;
 use rand::{Rng, SeedableRng};
@@ -22,11 +23,7 @@ use mcmc::*;
 use weight::{Weight, WeightType};
 
 mod bellman_ford;
-#[cfg(feature = "bidir")]
 mod bidirectional;
-#[cfg(feature = "bidir")]
-pub use bidirectional::BiDijkstra;
-
 mod dijkstra;
 mod graph;
 mod mcmc;

@@ -143,7 +143,6 @@ where
 }
 
 /// Runs the MCMC using a bidirectional dijkstra search
-#[cfg(feature = "bidir")]
 fn run_mcmc_bidirectional<W>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters)
 where
     W: Weight,
