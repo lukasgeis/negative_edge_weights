@@ -8,8 +8,6 @@ use std::{
 };
 
 use num::Zero;
-use ordered_float::NotNan;
-use radix_heap::Radix;
 use rand_distr::uniform::SampleUniform;
 
 /// Generic definition of a weight (typically either `f64` or `i64`)
@@ -22,22 +20,18 @@ pub trait Weight:
     + SampleUniform
     + Add<Output = Self>
     + Sub<Output = Self>
+    + Neg<Output = Self>
     + AddAssign
     + SubAssign
-    + Neg<Output = Self>
     + Display
     + Debug
     + Sum
 {
-    /// `RadixHeapMap` requires values that implement the following traits. Additionally we need a MinHeap
-    /// while `RadixHeapMap` is a MaxHeap
-    type RadixWeight: Radix + Ord + Copy;
-
-    /// Threshold near `0`
-    const ZERO_THRESHOLD: Self;
-
     /// Maximum positive value, i.e. `INFINITY` for `f64` and `2^64 - 1` for `i64`
     const MAX: Self;
+
+    /// Number of bits
+    const NUM_BITS: usize;
 
     // Float Conversions are explicitly implemented here since `f64` does not implement
     // `From<i64>` and so on
@@ -48,16 +42,20 @@ pub trait Weight:
     /// Convert `Self` to `f64`
     fn to_f64(self) -> f64;
 
-    /// Convert the weight into its `RadixWeight` form
-    fn to_radix(self) -> Self::RadixWeight;
+    /// Number of high bits in a row that `self` and `other` have in common
+    fn radix_similarity(&self, other: &Self) -> usize;
 
-    /// Convert the weight back from its `RadixWeight` form
-    fn from_radix(radix: Self::RadixWeight) -> Self;
+    /// Opposite of `radix_similarity`
+    #[inline]
+    fn radix_distance(&self, other: &Self) -> usize {
+        Self::NUM_BITS - self.radix_similarity(other)
+    }
 
     /// Rounds `self` up to `value` if `value` is greater
     ///
     /// Note that this is mainly supposed to be used to correct floating point errors thus for `f32` and `f64` implementing this trait.
     /// Non-float types should leave this method empty.
+    #[inline]
     fn round_up(&mut self, value: Self) {
         if value > *self {
             *self = value;
@@ -69,9 +67,8 @@ macro_rules! weight_impl_float {
     ($($t:ty),*) => {
         $(
             impl Weight for $t {
-                type RadixWeight = Reverse<NotNan<$t>>;
-                const ZERO_THRESHOLD: Self = 1e-8 as $t;
                 const MAX: Self = <$t>::INFINITY;
+                const NUM_BITS: usize = (std::mem::size_of::<$t>() * 8);
 
                 #[inline]
                 fn from_f64(val: f64) -> Self {
@@ -84,13 +81,8 @@ macro_rules! weight_impl_float {
                 }
 
                 #[inline]
-                fn to_radix(self) -> Self::RadixWeight {
-                    Reverse(NotNan::new(self).expect("A NaN value was encountered"))
-                }
-
-                #[inline]
-                fn from_radix(radix: Self::RadixWeight) -> Self {
-                    radix.0.into_inner()
+                fn radix_similarity(&self, other: &Self) -> usize {
+                    (self.to_bits() ^ other.to_bits()).leading_zeros() as usize
                 }
             }
         )*
@@ -101,9 +93,8 @@ macro_rules! weight_impl_int {
     ($($t:ty),*) => {
         $(
             impl Weight for $t {
-                type RadixWeight = Reverse<$t>;
-                const ZERO_THRESHOLD: Self = 0 as $t;
                 const MAX: Self = <$t>::MAX;
+                const NUM_BITS: usize = (std::mem::size_of::<$t>() * 8);
 
                 #[inline]
                 fn from_f64(val: f64) -> Self {
@@ -116,13 +107,8 @@ macro_rules! weight_impl_int {
                 }
 
                 #[inline]
-                fn to_radix(self) -> Self::RadixWeight {
-                    Reverse(self)
-                }
-
-                #[inline]
-                fn from_radix(radix: Self::RadixWeight) -> Self {
-                    radix.0
+                fn radix_similarity(&self, other: &Self) -> usize {
+                    (self ^ other).leading_zeros() as usize
                 }
 
                 /// We should never need to round integer types

@@ -149,7 +149,7 @@ impl<W: Weight> Graph<W> {
     pub fn is_feasible(&self) -> bool {
         self.edges
             .iter()
-            .all(|e| self.potential_weight(*e) >= -W::ZERO_THRESHOLD)
+            .all(|e| self.potential_weight(*e) >= W::zero())
     }
 
     /// Generate a GNP graph with specified default_weight for every edge

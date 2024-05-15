@@ -1,9 +1,4 @@
-#[cfg(feature = "hops")]
-use std::cmp::Reverse;
-
-use radix_heap::RadixHeapMap;
-
-use crate::{graph::*, utils::*, weight::Weight};
+use crate::{graph::*, radixheap::RadixHeap, utils::*, weight::Weight};
 
 /// The state of a node in Dijkstra
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -110,29 +105,32 @@ impl<W: Weight> VisitedDistances<W> {
 
 /// Dijkstra instance to reuse data structure for multiple runs
 /// Note that this is meant to be used on graphs with the same number of nodes only
-pub struct Dijkstra<W: Weight> {
+pub struct Dijkstra<W>
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
     /// MinHeap used for Dijkstra: implementation uses a MaxHeap, thus we need `Reverse`
-    #[cfg(not(feature = "hops"))]
-    heap: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
-    #[cfg(feature = "hops")]
-    heap: RadixHeapMap<(<W as Weight>::RadixWeight, Reverse<usize>), Node>,
+    heap: RadixHeap<W, Node>,
 
     /// Stores which nodes have already been visited in which total distance
     visit_states: VisitedDistances<W>,
 
-    #[cfg(not(feature = "hops"))]
+    /// A stack to keep track of nodes that can be visiteed directly without putting them on the
+    /// heap
     zero_nodes: Vec<Node>,
-
-    #[cfg(feature = "hops")]
-    zero_nodes: Vec<(Node, usize)>,
 }
 
-impl<W: Weight> Dijkstra<W> {
+impl<W> Dijkstra<W>
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
     /// Initializes Dijkstra for a graph with `n` nodes
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
-            heap: RadixHeapMap::new(),
+            heap: RadixHeap::new(),
             visit_states: VisitedDistances::new(n),
             zero_nodes: Vec::new(),
         }
@@ -152,9 +150,6 @@ impl<W: Weight> Dijkstra<W> {
         max_distance: W,
     ) -> Option<impl Iterator<Item = (Node, W)> + '_> {
         if source_node == target_node {
-            #[cfg(feature = "hops")]
-            println!("0");
-
             return None;
         }
 
@@ -164,35 +159,15 @@ impl<W: Weight> Dijkstra<W> {
 
         self.visit_states.queue_node(source_node, W::zero());
 
-        #[cfg(not(feature = "hops"))]
-        self.heap.push(W::to_radix(W::zero()), source_node);
-
-        #[cfg(feature = "hops")]
-        self.heap
-            .push((W::to_radix(W::zero()), Reverse(0)), source_node);
+        self.heap.push(W::zero(), source_node);
 
         while let Some((dist, heap_node)) = self.heap.pop() {
-            #[cfg(feature = "hops")]
-            let (dist, hops) = dist;
-
-            #[cfg(feature = "hops")]
-            let hops = hops.0;
-
-            let dist = W::from_radix(dist);
-
-            #[cfg(not(feature = "hops"))]
             self.zero_nodes.push(heap_node);
-
-            #[cfg(feature = "hops")]
-            self.zero_nodes.push((heap_node, hops));
 
             #[cfg(feature = "dfs_size")]
             let mut dfs = 0usize;
 
             while let Some(node) = self.zero_nodes.pop() {
-                #[cfg(feature = "hops")]
-                let (node, nhops) = node;
-
                 if self.visit_states.is_visited(node) {
                     continue;
                 }
@@ -213,11 +188,7 @@ impl<W: Weight> Dijkstra<W> {
                             return None;
                         }
 
-                        #[cfg(not(feature = "hops"))]
                         self.zero_nodes.push(succ);
-
-                        #[cfg(feature = "hops")]
-                        self.zero_nodes.push((succ, nhops + 1));
 
                         #[cfg(feature = "dfs_size")]
                         {
@@ -234,9 +205,6 @@ impl<W: Weight> Dijkstra<W> {
                     }
 
                     if succ == target_node && cost < max_distance {
-                        #[cfg(feature = "hops")]
-                        println!("{}", nhops + 1);
-
                         return None;
                     }
 
@@ -247,20 +215,11 @@ impl<W: Weight> Dijkstra<W> {
                     // Note that this should only happen due to floating-point precision errors. If
                     // there is a logic error in some part of the code, this method might nullify the
                     // error unknowingly
-                    #[cfg(not(feature = "hops"))]
-                    let top = W::from_radix(self.heap.top().unwrap());
-
-                    #[cfg(feature = "hops")]
-                    let top = W::from_radix(self.heap.top().unwrap().0);
+                    let top = self.heap.top();
 
                     cost.round_up(top);
                     if self.visit_states.queue_node(succ, cost) {
-                        #[cfg(not(feature = "hops"))]
-                        self.heap.push(W::to_radix(cost), succ);
-
-                        #[cfg(feature = "hops")]
-                        self.heap
-                            .push((W::to_radix(cost), Reverse(nhops + 1)), succ);
+                        self.heap.push(cost, succ);
                     }
                 }
             }

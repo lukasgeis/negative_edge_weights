@@ -1,6 +1,10 @@
 use crate::*;
 
-pub(crate) fn run<W: Weight>(params: Parameters) {
+pub(crate) fn run<W>(params: Parameters)
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
     let mut rng = if let Some(seed) = params.seed {
         Pcg64::seed_from_u64(seed)
     } else {
@@ -84,7 +88,11 @@ pub(crate) fn run<W: Weight>(params: Parameters) {
 }
 
 /// Runs the MCMC on the graph with the specified parameters
-fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters) {
+fn run_mcmc<W>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters)
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
     let num_rounds = (graph.m() as f64 * params.rounds_per_edge).ceil() as u64;
     let mut dijkstra = Dijkstra::new(graph.n());
     let sampler = Uniform::new(
@@ -136,11 +144,11 @@ fn run_mcmc<W: Weight>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parame
 
 /// Runs the MCMC using a bidirectional dijkstra search
 #[cfg(feature = "bidir")]
-fn run_mcmc_bidirectional<W: Weight>(
-    rng: &mut impl Rng,
-    graph: &mut Graph<W>,
-    params: &Parameters,
-) {
+fn run_mcmc_bidirectional<W>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters)
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
     let num_rounds = (graph.m() as f64 * params.rounds_per_edge).ceil() as u64;
     let mut dijkstra = BiDijkstra::new(graph.n());
     let sampler = Uniform::new(

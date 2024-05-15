@@ -1,9 +1,8 @@
 #![allow(unused)]
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
 
-#[cfg(all(feature = "hops", feature = "dfs_size"))]
-compile_error!("Features `hops` and `dfs_size` are mutually exclusive!");
-
-#[cfg(all(feature = "bidir", any(feature = "hops", feature = "dfs_size")))]
+#[cfg(all(feature = "bidir", feature = "dfs_size"))]
 compile_error!("Features `bidir` and `hops`, `dfs_size` are mutually exclusive!");
 
 use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
@@ -31,6 +30,7 @@ pub use bidirectional::BiDijkstra;
 mod dijkstra;
 mod graph;
 mod mcmc;
+mod radixheap;
 mod utils;
 mod weight;
 

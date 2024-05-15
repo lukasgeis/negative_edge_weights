@@ -1,6 +1,4 @@
-use radix_heap::RadixHeapMap;
-
-use crate::{graph::*, utils::*, weight::Weight};
+use crate::{graph::*, radixheap::RadixHeap, utils::*, weight::Weight};
 
 /// Possible VisitStates of a single node in the bidirectional search
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -227,22 +225,30 @@ impl<W: Weight> VisitedDistances<W> {
 }
 
 /// Bidirectional Dijkstra
-pub struct BiDijkstra<W: Weight> {
+pub struct BiDijkstra<W>
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
     /// The Maxheap for the forward-search
-    heapf: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
+    heapf: RadixHeap<W, Node>,
     /// The Maxheap for the backward-search
-    heapb: RadixHeapMap<<W as Weight>::RadixWeight, Node>,
+    heapb: RadixHeap<W, Node>,
     /// The VisitStates of all nodes
     visit_states: VisitedDistances<W>,
 }
 
-impl<W: Weight> BiDijkstra<W> {
+impl<W> BiDijkstra<W>
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
     /// Creates a new instance
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
-            heapf: RadixHeapMap::new(),
-            heapb: RadixHeapMap::new(),
+            heapf: RadixHeap::new(),
+            heapb: RadixHeap::new(),
             visit_states: VisitedDistances::new(n),
         }
     }
@@ -274,15 +280,13 @@ impl<W: Weight> BiDijkstra<W> {
         self.visit_states
             .queue_node_backward(target_node, W::zero(), max_distance);
 
-        self.heapf.push(W::to_radix(W::zero()), source_node);
-        self.heapb.push(W::to_radix(W::zero()), target_node);
+        self.heapf.push(W::zero(), source_node);
+        self.heapb.push(W::zero(), target_node);
 
         let (mut df, mut db) = (W::zero(), W::zero());
 
         loop {
             if let Some((dist, heapf_node)) = self.heapf.pop() {
-                let dist = W::from_radix(dist);
-
                 df = dist;
                 if df + db >= max_distance {
                     df = max_distance - db;
@@ -294,14 +298,14 @@ impl<W: Weight> BiDijkstra<W> {
                     for (_, succ, weight) in graph.neighbors(heapf_node) {
                         let succ = *succ;
                         let mut cost = dist + graph.potential_weight((heapf_node, succ, *weight));
-                        let top = W::from_radix(self.heapf.top().unwrap());
+                        let top = self.heapf.top();
                         cost.round_up(top);
                         match self
                             .visit_states
                             .queue_node_forward(succ, cost, max_distance)
                         {
                             None => return None,
-                            Some(true) => self.heapf.push(W::to_radix(cost), succ),
+                            Some(true) => self.heapf.push(cost, succ),
                             _ => (),
                         };
                     }
@@ -309,8 +313,6 @@ impl<W: Weight> BiDijkstra<W> {
             }
 
             if let Some((dist, heapb_node)) = self.heapb.pop() {
-                let dist = W::from_radix(dist);
-
                 db = dist;
                 if df + db >= max_distance {
                     db = max_distance - df;
@@ -323,7 +325,7 @@ impl<W: Weight> BiDijkstra<W> {
                     for (pred, _, weight) in graph.in_neighbors(heapb_node) {
                         let pred = *pred;
                         let mut cost = dist + graph.potential_weight((pred, heapb_node, *weight));
-                        let top = W::from_radix(self.heapb.top().unwrap());
+                        let top = self.heapb.top();
                         cost.round_up(top);
 
                         match self
@@ -331,7 +333,7 @@ impl<W: Weight> BiDijkstra<W> {
                             .queue_node_backward(pred, cost, max_distance)
                         {
                             None => return None,
-                            Some(true) => self.heapb.push(W::to_radix(cost), pred),
+                            Some(true) => self.heapb.push(cost, pred),
                             _ => (),
                         };
                     }
