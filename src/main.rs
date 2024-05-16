@@ -1,6 +1,7 @@
 #![allow(unused)]
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
+#![feature(generic_const_items)]
 
 #[cfg(all(feature = "bidir", feature = "dfs_size"))]
 compile_error!("Features `bidir` and `hops`, `dfs_size` are mutually exclusive!");

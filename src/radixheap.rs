@@ -1,6 +1,54 @@
 //! A RadixMinHeap implementation based on the `radix-heap` crate
 
+use num::Zero;
+
 use crate::weight::Weight;
+
+pub trait Radix {
+    const NUM_BITS: usize;
+
+    /// Number of high bits in a row that `self` and `other` have in common
+    fn radix_similarity(&self, other: &Self) -> usize;
+
+    /// Opposite of `radix_similarity`
+    #[inline]
+    fn radix_distance(&self, other: &Self) -> usize {
+        Self::NUM_BITS - self.radix_similarity(other)
+    }
+}
+
+macro_rules! radix_impl_float {
+    ($($t:ty),*) => {
+        $(
+            impl Radix for $t {
+                const NUM_BITS: usize = (std::mem::size_of::<$t>() * 8);
+
+                #[inline]
+                fn radix_similarity(&self, other: &Self) -> usize {
+                    (self.to_bits() ^ other.to_bits()).leading_zeros() as usize
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! radix_impl_int {
+    ($($t:ty),*) => {
+        $(
+            impl Radix for $t {
+                const NUM_BITS: usize = (std::mem::size_of::<$t>() * 8);
+
+                #[inline]
+                fn radix_similarity(&self, other: &Self) -> usize {
+                    (self ^ other).leading_zeros() as usize
+                }
+            }
+        )*
+    };
+}
+
+radix_impl_float!(f32, f64);
+radix_impl_int!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128);
 
 /// A Bucket is simply a vector of key-value-pairs
 type Bucket<K, V> = Vec<(K, V)>;
@@ -8,7 +56,7 @@ type Bucket<K, V> = Vec<(K, V)>;
 /// A RadixMinHeap
 pub struct RadixHeap<K, V>
 where
-    K: Weight,
+    K: Radix,
     [(); K::NUM_BITS + 1]: Sized,
 {
     /// Current size of the heap
@@ -23,7 +71,7 @@ where
 
 impl<K, V> RadixHeap<K, V>
 where
-    K: Weight,
+    K: Radix + PartialOrd + Copy + Zero,
     [(); K::NUM_BITS + 1]: Sized,
 {
     /// Creates a new Heap

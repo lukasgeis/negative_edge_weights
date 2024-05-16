@@ -111,7 +111,7 @@ where
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph),
-                "[TEST] BF found a negative weight cycle when Dijkstra accepted directly"
+                "[FAIL] BF found a negative weight cycle when Dijkstra accepted directly"
             );
             continue;
         }
@@ -125,7 +125,7 @@ where
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph) && graph.is_feasible(),
-                "[TEST] BF found a negative weight cycle when Dijkstra accepted"
+                "[FAIL] BF found a negative weight cycle when Dijkstra accepted"
             );
         } else {
             #[cfg(feature = "bf_test")]
@@ -134,7 +134,7 @@ where
                 graph.update_weight(idx, weight);
                 assert!(
                     has_negative_cycle(graph),
-                    "[TEST] BF found no negative weight cycle when Dijkstra rejected"
+                    "[FAIL] BF found no negative weight cycle when Dijkstra rejected"
                 );
                 graph.update_weight(idx, old_weight);
             }
@@ -165,7 +165,7 @@ where
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph),
-                "[TEST] BF found a negative weight cycle when BiDijkstra accepted directly"
+                "[FAIL] BF found a negative weight cycle when BiDijkstra accepted directly"
             );
             continue;
         }
@@ -183,7 +183,7 @@ where
             #[cfg(feature = "bf_test")]
             assert!(
                 !has_negative_cycle(graph) && graph.is_feasible(),
-                "[TEST] BF found a negative weight cycle when BiDijkstra accepted"
+                "[FAIL] BF found a negative weight cycle when BiDijkstra accepted"
             );
         } else {
             #[cfg(feature = "bf_test")]
@@ -192,7 +192,7 @@ where
                 graph.update_weight(idx, weight);
                 assert!(
                     has_negative_cycle(graph),
-                    "[TEST] BF found no negative weight cycle when BiDijkstra rejected"
+                    "[FAIL] BF found no negative weight cycle when BiDijkstra rejected"
                 );
                 graph.update_weight(idx, old_weight);
             }

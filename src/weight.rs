@@ -10,6 +10,8 @@ use std::{
 use num::Zero;
 use rand_distr::uniform::SampleUniform;
 
+use crate::radixheap::Radix;
+
 /// Generic definition of a weight (typically either `f64` or `i64`)
 pub trait Weight:
     Sized
@@ -26,12 +28,10 @@ pub trait Weight:
     + Display
     + Debug
     + Sum
+    + Radix
 {
     /// Maximum positive value, i.e. `INFINITY` for `f64` and `2^64 - 1` for `i64`
     const MAX: Self;
-
-    /// Number of bits
-    const NUM_BITS: usize;
 
     // Float Conversions are explicitly implemented here since `f64` does not implement
     // `From<i64>` and so on
@@ -41,15 +41,6 @@ pub trait Weight:
 
     /// Convert `Self` to `f64`
     fn to_f64(self) -> f64;
-
-    /// Number of high bits in a row that `self` and `other` have in common
-    fn radix_similarity(&self, other: &Self) -> usize;
-
-    /// Opposite of `radix_similarity`
-    #[inline]
-    fn radix_distance(&self, other: &Self) -> usize {
-        Self::NUM_BITS - self.radix_similarity(other)
-    }
 
     /// Rounds `self` up to `value` if `value` is greater
     ///
@@ -68,7 +59,6 @@ macro_rules! weight_impl_float {
         $(
             impl Weight for $t {
                 const MAX: Self = <$t>::INFINITY;
-                const NUM_BITS: usize = (std::mem::size_of::<$t>() * 8);
 
                 #[inline]
                 fn from_f64(val: f64) -> Self {
@@ -78,11 +68,6 @@ macro_rules! weight_impl_float {
                 #[inline]
                 fn to_f64(self) -> f64 {
                     self as f64
-                }
-
-                #[inline]
-                fn radix_similarity(&self, other: &Self) -> usize {
-                    (self.to_bits() ^ other.to_bits()).leading_zeros() as usize
                 }
             }
         )*
@@ -94,7 +79,6 @@ macro_rules! weight_impl_int {
         $(
             impl Weight for $t {
                 const MAX: Self = <$t>::MAX;
-                const NUM_BITS: usize = (std::mem::size_of::<$t>() * 8);
 
                 #[inline]
                 fn from_f64(val: f64) -> Self {
@@ -104,11 +88,6 @@ macro_rules! weight_impl_int {
                 #[inline]
                 fn to_f64(self) -> f64 {
                     self as f64
-                }
-
-                #[inline]
-                fn radix_similarity(&self, other: &Self) -> usize {
-                    (self ^ other).leading_zeros() as usize
                 }
 
                 /// We should never need to round integer types
