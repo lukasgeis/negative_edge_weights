@@ -152,6 +152,9 @@ where
         if source_node == target_node {
             return None;
         }
+    
+        #[cfg(feature = "sptree_size")]
+        let (mut nodes_visited, mut nodes_queued, mut edges_traversed) = (0usize, 0usize, 0usize);
 
         self.visit_states.reset();
         self.heap.clear();
@@ -174,7 +177,17 @@ where
 
                 self.visit_states.visit_node(node);
 
+                #[cfg(feature = "sptree_size")]
+                {
+                    nodes_visited += 1;
+                }
+
                 for (_, succ, weight) in graph.neighbors(node) {
+                    #[cfg(feature = "sptree_size")]
+                    {
+                        edges_traversed += 1;
+                    }
+
                     let succ = *succ;
                     if self.visit_states.is_visited(succ) {
                         continue;
@@ -185,10 +198,17 @@ where
 
                     if next == W::zero() && self.visit_states.queue_node(succ, dist) {
                         if succ == target_node && dist < max_distance {
+                            #[cfg(feature = "sptree_size")]
+                            println!("{nodes_visited},{nodes_queued},{edges_traversed},dijkstra,total");
                             return None;
                         }
 
                         self.zero_nodes.push(succ);
+                        
+                        #[cfg(feature = "sptree_size")]
+                        {
+                            nodes_queued += 1;
+                        }
 
                         #[cfg(feature = "dfs_size")]
                         {
@@ -205,6 +225,8 @@ where
                     }
 
                     if succ == target_node && cost < max_distance {
+                        #[cfg(feature = "sptree_size")]
+                        println!("{nodes_visited},{nodes_queued},{edges_traversed},dijkstra,total");
                         return None;
                     }
 
@@ -219,6 +241,10 @@ where
 
                     cost.round_up(top);
                     if self.visit_states.queue_node(succ, cost) {
+                        #[cfg(feature = "sptree_size")]
+                        {
+                            nodes_queued += 1;
+                        }
                         self.heap.push(cost, succ);
                     }
                 }
@@ -227,6 +253,9 @@ where
             #[cfg(feature = "dfs_size")]
             println!("{dfs}");
         }
+
+        #[cfg(feature = "sptree_size")]
+        println!("{nodes_visited},{nodes_queued},{edges_traversed},dijkstra,total");
 
         Some(self.visit_states.get_distances())
     }

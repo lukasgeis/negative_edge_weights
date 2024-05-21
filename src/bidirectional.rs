@@ -271,6 +271,12 @@ where
             return None;
         }
 
+        #[cfg(feature = "sptree_size")]
+        let (mut nodes_visited_f, mut nodes_queued_f, mut edges_traversed_f) = (0usize, 0usize, 0usize);        
+
+        #[cfg(feature = "sptree_size")]
+        let (mut nodes_visited_b, mut nodes_queued_b, mut edges_traversed_b) = (0usize, 0usize, 0usize);        
+
         self.visit_states.reset();
         self.heapf.clear();
         self.heapb.clear();
@@ -295,7 +301,17 @@ where
                 if !self.visit_states.is_visited(heapf_node) {
                     self.visit_states.visit_node_forward(heapf_node);
 
+                    #[cfg(feature = "sptree_size")]
+                    {
+                        nodes_visited_f += 1;
+                    }
+
                     for (_, succ, weight) in graph.neighbors(heapf_node) {
+                        #[cfg(feature = "sptree_size")]
+                        {
+                            edges_traversed_f += 1;
+                        }
+
                         let succ = *succ;
                         let mut cost = dist + graph.potential_weight((heapf_node, succ, *weight));
                         let top = self.heapf.top();
@@ -304,8 +320,18 @@ where
                             .visit_states
                             .queue_node_forward(succ, cost, max_distance)
                         {
-                            None => return None,
-                            Some(true) => self.heapf.push(cost, succ),
+                            None => {
+                                #[cfg(feature = "sptree_size")]
+                                println!("{nodes_visited_f},{nodes_queued_f},{edges_traversed_f},bidijkstra,forward\n{nodes_visited_b},{nodes_queued_b},{edges_traversed_b},bidijkstra,backward");
+                                return None;
+                            },
+                            Some(true) => {
+                                    self.heapf.push(cost, succ);
+                                    #[cfg(feature = "sptree_size")]
+                                    {
+                                        nodes_queued_f += 1;
+                                    }
+                            },
                             _ => (),
                         };
                     }
@@ -322,7 +348,17 @@ where
                 if !self.visit_states.is_visited(heapb_node) {
                     self.visit_states.visit_node_backward(heapb_node);
 
+                    #[cfg(feature = "sptree_size")]
+                    {
+                        nodes_visited_b += 1;
+                    }
+
                     for (pred, _, weight) in graph.in_neighbors(heapb_node) {
+                        #[cfg(feature = "sptree_size")]
+                        {
+                            edges_traversed_b += 1;
+                        }
+
                         let pred = *pred;
                         let mut cost = dist + graph.potential_weight((pred, heapb_node, *weight));
                         let top = self.heapb.top();
@@ -332,8 +368,18 @@ where
                             .visit_states
                             .queue_node_backward(pred, cost, max_distance)
                         {
-                            None => return None,
-                            Some(true) => self.heapb.push(cost, pred),
+                            None => {
+                                #[cfg(feature = "sptree_size")]
+                                println!("{nodes_visited_f},{nodes_queued_f},{edges_traversed_f},bidijkstra,forward\n{nodes_visited_b},{nodes_queued_b},{edges_traversed_b},bidijkstra,backward");
+                                return None;
+                            },
+                            Some(true) => {
+                                self.heapb.push(cost, pred);
+                                #[cfg(feature = "sptree_size")]
+                                {
+                                    nodes_queued_b += 1;
+                                }
+                            },
                             _ => (),
                         };
                     }
@@ -345,6 +391,9 @@ where
                 break;
             }
         }
+
+        #[cfg(feature = "sptree_size")]
+        println!("{nodes_visited_f},{nodes_queued_f},{edges_traversed_f},bidijkstra,forward\n{nodes_visited_b},{nodes_queued_b},{edges_traversed_b},bidijkstra,backward");
 
         Some(((df, db), self.visit_states.get_distances()))
     }

@@ -27,10 +27,12 @@ sns.set_theme(style="darkgrid")
 plt.rcParams["text.usetex"] = True
 plt.rcParams['figure.figsize'] = 10, 6
 
-fig, ax = plt.subplots(2, 3, sharex="row", sharey=True)
+fig, ax = plt.subplots(1, 1, sharex="row", sharey=True)
 
 for i in range(2):
     for j in range(3):
+        if i > 0 or j > 0:
+            continue
         plot = sns.histplot(
             ax=ax[i, j],
             data=data[
