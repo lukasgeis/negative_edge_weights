@@ -115,24 +115,26 @@ mod tests {
     #[test]
     fn dijkstra_vs_bf() {
         for (a, b) in [(-1.0, 1.0), (-2.0, 5.0), (-3.0, 10.0)] {
-            let params = Parameters {
-                source: Source::Gnp {
-                    nodes: 100,
-                    avg_deg: 5.0,
-                },
-                min_weight: a,
-                max_weight: b,
-                weight_type: WeightType::F64,
-                rounds_per_edge: 5.0,
-                seed: Some(1234),
-                output: None,
-                check: true,
-                bftest: true,
-                bidir: false,
-            };
+            for bidir in [true, false] {
+                let params = Parameters {
+                    source: Source::Gnp {
+                        nodes: 100,
+                        avg_deg: 5.0,
+                    },
+                    min_weight: a,
+                    max_weight: b,
+                    weight_type: WeightType::F64,
+                    rounds_per_edge: 5.0,
+                    seed: Some(1234),
+                    output: None,
+                    check: true,
+                    bftest: true,
+                    bidir,
+                };
 
-            run::<i64>(params.clone());
-            run::<f64>(params);
+                run::<i64>(params.clone());
+                run::<f64>(params);
+            }
         }
     }
 }
