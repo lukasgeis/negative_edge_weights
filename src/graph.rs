@@ -3,7 +3,7 @@ use std::{fmt::Debug, io::Write};
 use rand::Rng;
 use rand_distr::Geometric;
 
-use crate::weight::Weight;
+use crate::{weight::Weight, Source};
 
 pub type Node = usize;
 pub type Edge<W> = (Node, Node, W);
@@ -197,6 +197,20 @@ impl<W: Weight> Graph<W> {
     pub fn gen_cycle(n: usize, default_weight: W) -> Self {
         let edges = (0..n).map(|u| (u, (u + 1) % n, default_weight)).collect();
         Self::from_edge_list(n, edges, true)
+    }
+
+    /// Creates the graph according to the specified source
+    #[inline]
+    pub fn from_source(source: &Source, rng: &mut impl Rng, default_weight: W) -> Self {
+        match *source {
+            Source::Gnp { nodes, avg_deg } => {
+                assert!(nodes > 1 && avg_deg > 0.0);
+                let prob = avg_deg / (nodes as f64);
+                Graph::gen_gnp(rng, nodes, prob, default_weight)
+            }
+            Source::Complete { nodes, loops } => Graph::gen_complete(nodes, loops, default_weight),
+            Source::Cycle { nodes } => Graph::gen_cycle(nodes, default_weight),
+        }
     }
 
     /// Returns the average weight in the graph

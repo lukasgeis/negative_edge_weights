@@ -13,15 +13,7 @@ where
 
     let mut timer = Instant::now();
     let default_weight = W::from_f64(params.max_weight);
-    let mut graph: Graph<W> = match params.source {
-        Source::Gnp { nodes, avg_deg } => {
-            assert!(nodes > 1 && avg_deg > 0.0);
-            let prob = avg_deg / (nodes as f64);
-            Graph::gen_gnp(&mut rng, nodes, prob, default_weight)
-        }
-        Source::Complete { nodes, loops } => Graph::gen_complete(nodes, loops, default_weight),
-        Source::Cycle { nodes } => Graph::gen_cycle(nodes, default_weight),
-    };
+    let mut graph: Graph<W> = Graph::from_source(&params.source, &mut rng, default_weight);
 
     #[cfg(not(feature = "no_print"))]
     println!(
@@ -87,7 +79,7 @@ where
 }
 
 /// Runs the MCMC on the graph with the specified parameters
-fn run_mcmc<W>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters)
+pub(crate) fn run_mcmc<W>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters)
 where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
@@ -141,8 +133,11 @@ where
 }
 
 /// Runs the MCMC using a bidirectional dijkstra search
-fn run_mcmc_bidirectional<W>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters)
-where
+pub(crate) fn run_mcmc_bidirectional<W>(
+    rng: &mut impl Rng,
+    graph: &mut Graph<W>,
+    params: &Parameters,
+) where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
 {

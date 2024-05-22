@@ -114,27 +114,36 @@ mod tests {
 
     #[test]
     fn dijkstra_vs_bf() {
-        for (a, b) in [(-1.0, 1.0), (-2.0, 5.0), (-3.0, 10.0)] {
-            for bidir in [true, false] {
-                let params = Parameters {
-                    source: Source::Gnp {
-                        nodes: 100,
-                        avg_deg: 5.0,
-                    },
-                    min_weight: a,
-                    max_weight: b,
-                    weight_type: WeightType::F64,
-                    rounds_per_edge: 5.0,
-                    seed: Some(1234),
-                    output: None,
-                    check: true,
-                    bftest: true,
-                    bidir,
-                };
+        let mut rng = Pcg64::from_entropy();
 
-                run::<i64>(params.clone());
-                run::<f64>(params);
-            }
+        for (a, b) in [(-1.0, 1.0), (-2.0, 5.0), (-3.0, 10.0)] {
+            let params = Parameters {
+                source: Source::Gnp {
+                    nodes: 100,
+                    avg_deg: 5.0,
+                },
+                min_weight: a,
+                max_weight: b,
+                weight_type: WeightType::F64,
+                rounds_per_edge: 5.0,
+                seed: None,
+                output: None,
+                check: true,
+                bftest: true,
+                bidir: true,
+            };
+
+            let default_weight = i64::from_f64(params.max_weight);
+            let mut graph: Graph<i64> =
+                Graph::from_source(&params.source, &mut rng, default_weight);
+            run_mcmc::<i64>(&mut rng, &mut graph, &params);
+            run_mcmc_bidirectional::<i64>(&mut rng, &mut graph, &params);
+
+            let default_weight = f64::from_f64(params.max_weight);
+            let mut graph: Graph<f64> =
+                Graph::from_source(&params.source, &mut rng, default_weight);
+            run_mcmc::<f64>(&mut rng, &mut graph, &params);
+            run_mcmc_bidirectional::<f64>(&mut rng, &mut graph, &params)
         }
     }
 }
