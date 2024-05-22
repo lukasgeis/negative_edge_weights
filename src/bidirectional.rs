@@ -314,8 +314,7 @@ where
 
                         let succ = *succ;
                         let mut cost = dist + graph.potential_weight((heapf_node, succ, *weight));
-                        let top = self.heapf.top();
-                        cost.round_up(top);
+                        cost.round_up(self.heapf.top());
                         match self
                             .visit_states
                             .queue_node_forward(succ, cost, max_distance)
@@ -361,9 +360,7 @@ where
 
                         let pred = *pred;
                         let mut cost = dist + graph.potential_weight((pred, heapb_node, *weight));
-                        let top = self.heapb.top();
-                        cost.round_up(top);
-
+                        cost.round_up(self.heapb.top());
                         match self
                             .visit_states
                             .queue_node_backward(pred, cost, max_distance)

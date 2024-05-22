@@ -116,7 +116,7 @@ where
     /// Stores which nodes have already been visited in which total distance
     visit_states: VisitedDistances<W>,
 
-    /// A stack to keep track of nodes that can be visiteed directly without putting them on the
+    /// A stack to keep track of nodes that can be visited directly without putting them on the
     /// heap
     zero_nodes: Vec<Node>,
 }
@@ -230,16 +230,7 @@ where
                         return None;
                     }
 
-                    // `RadixHeapMap` panics if the inserted value is greater than the last popped
-                    // value `top`. Due to floating-point precision, this can throw unwanted errors that we
-                    // can prevent by rounding `cost` to `top` if `top` is greater.
-                    //
-                    // Note that this should only happen due to floating-point precision errors. If
-                    // there is a logic error in some part of the code, this method might nullify the
-                    // error unknowingly
-                    let top = self.heap.top();
-
-                    cost.round_up(top);
+                    cost.round_up(self.heap.top());
                     if self.visit_states.queue_node(succ, cost) {
                         #[cfg(feature = "sptree_size")]
                         {
