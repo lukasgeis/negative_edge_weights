@@ -46,11 +46,10 @@ where
     }
 
     timer = Instant::now();
-    #[cfg(not(feature = "bidir"))]
-    run_mcmc(&mut rng, &mut graph, &params);
-
-    #[cfg(feature = "bidir")]
-    run_mcmc_bidirectional(&mut rng, &mut graph, &params);
+    match params.bidir {
+        false => run_mcmc(&mut rng, &mut graph, &params),
+        true => run_mcmc_bidirectional(&mut rng, &mut graph, &params),
+    };
 
     #[cfg(not(feature = "no_print"))]
     println!("[INFO] MCMC run in {}ms", timer.elapsed().as_millis());

@@ -11,12 +11,6 @@ After that navigate to this directory and run:
 ```bash
 cargo build --release
 ```
-
-Alternatively, you can compile with the feature-flag `bidir` to use a faster bidirectional dijkstra instead of the normal one:
-```bash
-cargo build --release --features bidir 
-```
-
 The binary then can be found under `target/release/random_negative_weights`.
 
 
@@ -40,6 +34,7 @@ OPTIONS:
     -r <rounds-per-edge>        Carry out m * rounds_per_edge MCMC update steps; if rounds_per_edge is negative, iterate
                                 over all edges in random order and set to smallest weight possible [default: 1]
     -t <type>                   The primitive type of edge weights: can be any signed integer or float [default: f64]
+    --bidir                     Use a bidirectional search instead of the normal dijkstra one 
     --check                     Run additional NegativeCycleDetector checks before and after the MCMC 
     --bftest                    Cross-Check decisions by dijkstra with the naive version using Bellman-Ford
     -s <seed>                   Optional starting seed for the RNG 

@@ -65,6 +65,10 @@ struct Parameters {
     /// Cross-Reference decisions with a naive BF check
     #[structopt(long)]
     bftest: bool,
+
+    /// Enable bidiretional search
+    #[structopt(long)]
+    bidir: bool,
 }
 
 #[derive(StructOpt, Debug, Clone)]
@@ -124,6 +128,7 @@ mod tests {
                 output: None,
                 check: true,
                 bftest: true,
+                bidir: false,
             };
 
             run::<i64>(params.clone());
