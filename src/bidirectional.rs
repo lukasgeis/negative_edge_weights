@@ -272,10 +272,12 @@ where
         }
 
         #[cfg(feature = "sptree_size")]
-        let (mut nodes_visited_f, mut nodes_queued_f, mut edges_traversed_f) = (0usize, 0usize, 0usize);        
+        let (mut nodes_visited_f, mut nodes_queued_f, mut edges_traversed_f) =
+            (0usize, 0usize, 0usize);
 
         #[cfg(feature = "sptree_size")]
-        let (mut nodes_visited_b, mut nodes_queued_b, mut edges_traversed_b) = (0usize, 0usize, 0usize);        
+        let (mut nodes_visited_b, mut nodes_queued_b, mut edges_traversed_b) =
+            (0usize, 0usize, 0usize);
 
         self.visit_states.reset();
         self.heapf.clear();
@@ -323,14 +325,14 @@ where
                                 #[cfg(feature = "sptree_size")]
                                 println!("{nodes_visited_f},{nodes_queued_f},{edges_traversed_f},bidijkstra,forward\n{nodes_visited_b},{nodes_queued_b},{edges_traversed_b},bidijkstra,backward");
                                 return None;
-                            },
+                            }
                             Some(true) => {
-                                    self.heapf.push(cost, succ);
-                                    #[cfg(feature = "sptree_size")]
-                                    {
-                                        nodes_queued_f += 1;
-                                    }
-                            },
+                                self.heapf.push(cost, succ);
+                                #[cfg(feature = "sptree_size")]
+                                {
+                                    nodes_queued_f += 1;
+                                }
+                            }
                             _ => (),
                         };
                     }
@@ -369,14 +371,14 @@ where
                                 #[cfg(feature = "sptree_size")]
                                 println!("{nodes_visited_f},{nodes_queued_f},{edges_traversed_f},bidijkstra,forward\n{nodes_visited_b},{nodes_queued_b},{edges_traversed_b},bidijkstra,backward");
                                 return None;
-                            },
+                            }
                             Some(true) => {
                                 self.heapb.push(cost, pred);
                                 #[cfg(feature = "sptree_size")]
                                 {
                                     nodes_queued_b += 1;
                                 }
-                            },
+                            }
                             _ => (),
                         };
                     }

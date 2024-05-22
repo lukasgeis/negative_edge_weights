@@ -1,20 +1,10 @@
 use crate::{graph::*, radixheap::RadixHeap, utils::*, weight::Weight};
 
-/// The state of a node in Dijkstra
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum VisitState<W: Weight> {
-    /// The node has not been found yet
-    Unvisited,
-    /// The node is in the queue with current value
-    Queued(W),
-    /// The node was visited with final value
-    Visited(W),
-}
-
+/// The states and visited distances of all nodes 
 #[derive(Debug, Clone)]
 struct VisitedDistances<W: Weight> {
-    /// Stores the state for each node in this iteration
-    visit_map: Vec<VisitState<W>>,
+    /// Stores the tentative distance for each node in this iteration
+    visit_map: Vec<W>,
     /// Stores which nodes were reached in this iteration: only beneficial if we have `o(n)` nodes
     /// seen in total
     seen_nodes: ReusableVec<Node>,
@@ -24,43 +14,28 @@ impl<W: Weight> VisitedDistances<W> {
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
-            visit_map: vec![VisitState::Unvisited; n],
+            visit_map: vec![W::MAX; n],
             seen_nodes: ReusableVec::with_capacity(n),
         }
     }
 
-    /// Visits a node (if it is currently queued)
+    /// Returns *true* if the node is already visisted, i.e. if there is a shorter path to the node 
     #[inline]
-    pub fn visit_node(&mut self, node: Node) {
-        if let VisitState::Queued(dist) = self.visit_map[node] {
-            self.visit_map[node] = VisitState::Visited(dist);
-        }
-    }
-
-    /// Returns *true* if the node is already visisted
-    #[inline]
-    pub fn is_visited(&self, node: Node) -> bool {
-        matches!(self.visit_map[node], VisitState::Visited(_))
+    pub fn is_visited(&self, node: Node, dist: W) -> bool {
+        self.visit_map[node] < dist
     }
 
     /// Updates the distance of a node
     #[inline]
     pub fn queue_node(&mut self, node: Node, distance: W) -> bool {
-        match self.visit_map[node] {
-            VisitState::Unvisited => {
-                self.visit_map[node] = VisitState::Queued(distance);
+        if distance < self.visit_map[node] {
+            if self.visit_map[node] == W::MAX {
                 self.seen_nodes.push(node);
-                true
             }
-            VisitState::Queued(dist) => {
-                if distance < dist {
-                    self.visit_map[node] = VisitState::Queued(distance);
-                    true
-                } else {
-                    false
-                }
-            }
-            VisitState::Visited(_) => false,
+            self.visit_map[node] = distance;
+            true
+        } else {
+            false
         }
     }
 
@@ -69,13 +44,11 @@ impl<W: Weight> VisitedDistances<W> {
     pub fn reset(&mut self) {
         if self.seen_nodes.is_asymptotically_full() {
             self.seen_nodes.clear();
-            self.visit_map
-                .iter_mut()
-                .for_each(|w| *w = VisitState::Unvisited);
+            self.visit_map.iter_mut().for_each(|w| *w = W::MAX);
         } else {
             self.seen_nodes
                 .iter()
-                .for_each(|u| self.visit_map[*u] = VisitState::Unvisited);
+                .for_each(|u| self.visit_map[*u] = W::MAX);
             self.seen_nodes.clear();
         }
     }
@@ -84,8 +57,8 @@ impl<W: Weight> VisitedDistances<W> {
     #[inline]
     pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, W)> + '_ {
         if self.seen_nodes.is_asymptotically_full() {
-            DoubleIterator::IterA(self.visit_map.iter().enumerate().filter_map(|(u, s)| {
-                if let VisitState::Visited(w) = s {
+            DoubleIterator::IterA(self.visit_map.iter().enumerate().filter_map(|(u, w)| {
+                if *w < W::MAX {
                     Some((u, *w))
                 } else {
                     None
@@ -93,8 +66,8 @@ impl<W: Weight> VisitedDistances<W> {
             }))
         } else {
             DoubleIterator::IterB(self.seen_nodes.iter().filter_map(|u| {
-                if let VisitState::Visited(w) = self.visit_map[*u] {
-                    Some((*u, w))
+                if self.visit_map[*u] < W::MAX {
+                    Some((*u, self.visit_map[*u]))
                 } else {
                     None
                 }
@@ -152,7 +125,7 @@ where
         if source_node == target_node {
             return None;
         }
-    
+
         #[cfg(feature = "sptree_size")]
         let (mut nodes_visited, mut nodes_queued, mut edges_traversed) = (0usize, 0usize, 0usize);
 
@@ -165,18 +138,15 @@ where
         self.heap.push(W::zero(), source_node);
 
         while let Some((dist, heap_node)) = self.heap.pop() {
+            if self.visit_states.is_visited(heap_node, dist) {
+                continue;
+            }
             self.zero_nodes.push(heap_node);
 
             #[cfg(feature = "dfs_size")]
             let mut dfs = 0usize;
 
             while let Some(node) = self.zero_nodes.pop() {
-                if self.visit_states.is_visited(node) {
-                    continue;
-                }
-
-                self.visit_states.visit_node(node);
-
                 #[cfg(feature = "sptree_size")]
                 {
                     nodes_visited += 1;
@@ -189,22 +159,18 @@ where
                     }
 
                     let succ = *succ;
-                    if self.visit_states.is_visited(succ) {
-                        continue;
-                    }
-
                     let mut next = graph.potential_weight((node, succ, *weight));
-                    next.round_up(W::zero());
-
-                    if next == W::zero() && self.visit_states.queue_node(succ, dist) {
+                    if next <= W::zero() && self.visit_states.queue_node(succ, dist) {
                         if succ == target_node && dist < max_distance {
                             #[cfg(feature = "sptree_size")]
-                            println!("{nodes_visited},{nodes_queued},{edges_traversed},dijkstra,total");
+                            println!(
+                                "{nodes_visited},{nodes_queued},{edges_traversed},dijkstra,total"
+                            );
                             return None;
                         }
 
                         self.zero_nodes.push(succ);
-                        
+
                         #[cfg(feature = "sptree_size")]
                         {
                             nodes_queued += 1;
