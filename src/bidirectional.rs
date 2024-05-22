@@ -1,27 +1,12 @@
 use crate::{graph::*, radixheap::RadixHeap, utils::*, weight::Weight};
 
-/// Possible VisitStates of a single node in the bidirectional search
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum VisitState<W: Weight> {
-    /// The node has not been found in either search
-    Unvisited,
-    /// The node has been queued in the forward-search
-    QueuedForward(W),
-    /// The node has been found in the backward-search
-    QueuedBackward(W),
-    /// The node has been queued in both searches    
-    DoubleQueued(W, W),
-    /// The node has been visited in the forward-search
-    VisitedForward(W),
-    /// The node has been visited in the backward-search
-    VisitedBackward(W),
-}
-
 /// Keep track of all VisitStates
 #[derive(Debug, Clone)]
 struct VisitedDistances<W: Weight> {
-    /// VisitStates of all nodes
-    visit_map: Vec<VisitState<W>>,
+    /// VisitStates of all nodes: first entry is the tentative distance in the forward-search,
+    /// second entry the tentative distance in the backward-search. An entry of -1 means that the
+    /// node was visited in the other search
+    visit_map: Vec<(W, W)>,
     /// Vector of all seen nodes: might be faster for `o(n)` nodes
     seen_nodes: ReusableVec<Node>,
 }
@@ -31,7 +16,7 @@ impl<W: Weight> VisitedDistances<W> {
     #[inline]
     pub fn new(n: usize) -> Self {
         Self {
-            visit_map: vec![VisitState::Unvisited; n],
+            visit_map: vec![(W::MAX, W::MAX); n],
             seen_nodes: ReusableVec::with_capacity(n),
         }
     }
@@ -39,38 +24,25 @@ impl<W: Weight> VisitedDistances<W> {
     /// Visits a node in the forward-search
     #[inline]
     pub fn visit_node_forward(&mut self, node: Node) {
-        match self.visit_map[node] {
-            VisitState::QueuedForward(dist) => {
-                self.visit_map[node] = VisitState::VisitedForward(dist)
-            }
-            VisitState::DoubleQueued(dist, _) => {
-                self.visit_map[node] = VisitState::VisitedForward(dist)
-            }
-            _ => (),
-        };
+        self.visit_map[node].1 = -W::one()
     }
 
     /// Visits a node in the backward-search
     #[inline]
     pub fn visit_node_backward(&mut self, node: Node) {
-        match self.visit_map[node] {
-            VisitState::QueuedBackward(dist) => {
-                self.visit_map[node] = VisitState::VisitedBackward(dist)
-            }
-            VisitState::DoubleQueued(_, dist) => {
-                self.visit_map[node] = VisitState::VisitedBackward(dist)
-            }
-            _ => (),
-        };
+        self.visit_map[node].0 = -W::one()
     }
 
-    /// Returns *true* if the node has been visited in any search
+    /// Returns *true* if the node has been visited in the forward-search
     #[inline]
-    pub fn is_visited(&self, node: Node) -> bool {
-        matches!(
-            self.visit_map[node],
-            VisitState::VisitedForward(_) | VisitState::VisitedBackward(_)
-        )
+    pub fn is_visited_forward(&self, node: Node, dist: W) -> bool {
+        self.visit_map[node].0 < dist
+    }
+
+    /// Returns *true* if the node has been visited in the backward-search
+    #[inline]
+    pub fn is_visited_backward(&self, node: Node, dist: W) -> bool {
+        self.visit_map[node].1 < dist
     }
 
     /// Queues a node in the forward-search
@@ -79,48 +51,18 @@ impl<W: Weight> VisitedDistances<W> {
     /// Returns `None` if we have found a negative weight cycle
     #[inline]
     pub fn queue_node_forward(&mut self, node: Node, distance: W, max_distance: W) -> Option<bool> {
-        match self.visit_map[node] {
-            VisitState::Unvisited => {
-                self.visit_map[node] = VisitState::QueuedForward(distance);
+        if distance < self.visit_map[node].0 {
+            if self.visit_map[node].1 < W::MAX && distance + self.visit_map[node].1 < max_distance {
+                return None;
+            }
+
+            if self.visit_map[node] == (W::MAX, W::MAX) {
                 self.seen_nodes.push(node);
-                Some(true)
             }
-            VisitState::QueuedForward(dist) => {
-                if distance < dist {
-                    self.visit_map[node] = VisitState::QueuedForward(distance);
-                    Some(true)
-                } else {
-                    Some(false)
-                }
-            }
-            VisitState::QueuedBackward(dist) => {
-                if dist + distance < max_distance {
-                    return None;
-                }
-
-                self.visit_map[node] = VisitState::DoubleQueued(distance, dist);
-                Some(true)
-            }
-            VisitState::DoubleQueued(distf, distb) => {
-                if distance >= distf {
-                    return Some(false);
-                }
-
-                if distance + distb < max_distance {
-                    return None;
-                }
-
-                self.visit_map[node] = VisitState::DoubleQueued(distance, distb);
-                Some(true)
-            }
-            VisitState::VisitedBackward(dist) => {
-                if dist + distance < max_distance {
-                    return None;
-                }
-
-                Some(false)
-            }
-            _ => Some(false),
+            self.visit_map[node].0 = distance;
+            Some(true)
+        } else {
+            Some(false)
         }
     }
 
@@ -135,48 +77,18 @@ impl<W: Weight> VisitedDistances<W> {
         distance: W,
         max_distance: W,
     ) -> Option<bool> {
-        match self.visit_map[node] {
-            VisitState::Unvisited => {
-                self.visit_map[node] = VisitState::QueuedBackward(distance);
+        if distance < self.visit_map[node].1 {
+            if self.visit_map[node].0 < W::MAX && distance + self.visit_map[node].0 < max_distance {
+                return None;
+            }
+
+            if self.visit_map[node] == (W::MAX, W::MAX) {
                 self.seen_nodes.push(node);
-                Some(true)
             }
-            VisitState::QueuedBackward(dist) => {
-                if distance < dist {
-                    self.visit_map[node] = VisitState::QueuedBackward(distance);
-                    Some(true)
-                } else {
-                    Some(false)
-                }
-            }
-            VisitState::QueuedForward(dist) => {
-                if dist + distance < max_distance {
-                    return None;
-                }
-
-                self.visit_map[node] = VisitState::DoubleQueued(dist, distance);
-                Some(true)
-            }
-            VisitState::DoubleQueued(distf, distb) => {
-                if distance >= distb {
-                    return Some(false);
-                }
-
-                if distance + distf < max_distance {
-                    return None;
-                }
-
-                self.visit_map[node] = VisitState::DoubleQueued(distf, distance);
-                Some(true)
-            }
-            VisitState::VisitedForward(dist) => {
-                if dist + distance < max_distance {
-                    return None;
-                }
-
-                Some(false)
-            }
-            _ => Some(false),
+            self.visit_map[node].1 = distance;
+            Some(true)
+        } else {
+            Some(false)
         }
     }
 
@@ -187,11 +99,11 @@ impl<W: Weight> VisitedDistances<W> {
             self.seen_nodes.clear();
             self.visit_map
                 .iter_mut()
-                .for_each(|w| *w = VisitState::Unvisited);
+                .for_each(|w| *w = (W::MAX, W::MAX));
         } else {
             self.seen_nodes
                 .iter()
-                .for_each(|u| self.visit_map[*u] = VisitState::Unvisited);
+                .for_each(|u| self.visit_map[*u] = (W::MAX, W::MAX));
             self.seen_nodes.clear();
         }
     }
@@ -200,26 +112,25 @@ impl<W: Weight> VisitedDistances<W> {
     /// For nodes visited in the backward-search, we set the node-value to `node + n`
     pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, W)> + '_ {
         if self.seen_nodes.is_asymptotically_full() {
-            DoubleIterator::IterA(
-                self.visit_map
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(u, s)| match s {
-                        VisitState::VisitedForward(w) => Some((u, *w)),
-                        VisitState::VisitedBackward(w) => Some((u + self.visit_map.len(), *w)),
-                        _ => None,
-                    }),
-            )
+            DoubleIterator::IterA(self.visit_map.iter().enumerate().filter_map(|(u, s)| {
+                if s.0 == -W::one() {
+                    Some((u + self.visit_map.len(), s.1))
+                } else if s.1 == -W::one() {
+                    Some((u, s.0))
+                } else {
+                    None
+                }
+            }))
         } else {
-            DoubleIterator::IterB(
-                self.seen_nodes
-                    .iter()
-                    .filter_map(|u| match self.visit_map[*u] {
-                        VisitState::VisitedForward(w) => Some((*u, w)),
-                        VisitState::VisitedBackward(w) => Some((*u + self.visit_map.len(), w)),
-                        _ => None,
-                    }),
-            )
+            DoubleIterator::IterB(self.seen_nodes.iter().filter_map(|u| {
+                if self.visit_map[*u].0 == -W::one() {
+                    Some((*u + self.visit_map.len(), self.visit_map[*u].1))
+                } else if self.visit_map[*u].1 == -W::one() {
+                    Some((*u, self.visit_map[*u].0))
+                } else {
+                    None
+                }
+            }))
         }
     }
 }
@@ -300,7 +211,7 @@ where
                     df = max_distance - db;
                     break;
                 }
-                if !self.visit_states.is_visited(heapf_node) {
+                if !self.visit_states.is_visited_forward(heapf_node, dist) {
                     self.visit_states.visit_node_forward(heapf_node);
 
                     #[cfg(feature = "sptree_size")]
@@ -346,7 +257,7 @@ where
                     break;
                 }
 
-                if !self.visit_states.is_visited(heapb_node) {
+                if !self.visit_states.is_visited_backward(heapb_node, dist) {
                     self.visit_states.visit_node_backward(heapb_node);
 
                     #[cfg(feature = "sptree_size")]

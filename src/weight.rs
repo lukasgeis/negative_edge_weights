@@ -7,7 +7,7 @@ use std::{
     str::FromStr,
 };
 
-use num::Zero;
+use num::{One, Zero};
 use rand_distr::uniform::SampleUniform;
 
 use crate::radixheap::Radix;
@@ -17,6 +17,7 @@ pub trait Weight:
     Sized
     + Copy
     + Zero
+    + One
     + PartialOrd
     + PartialEq
     + SampleUniform

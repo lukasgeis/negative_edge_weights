@@ -1,6 +1,6 @@
 use crate::{graph::*, radixheap::RadixHeap, utils::*, weight::Weight};
 
-/// The states and visited distances of all nodes 
+/// The states and visited distances of all nodes
 #[derive(Debug, Clone)]
 struct VisitedDistances<W: Weight> {
     /// Stores the tentative distance for each node in this iteration
@@ -19,7 +19,7 @@ impl<W: Weight> VisitedDistances<W> {
         }
     }
 
-    /// Returns *true* if the node is already visisted, i.e. if there is a shorter path to the node 
+    /// Returns *true* if the node is already visisted, i.e. if there is a shorter path to the node
     #[inline]
     pub fn is_visited(&self, node: Node, dist: W) -> bool {
         self.visit_map[node] < dist
@@ -185,7 +185,6 @@ where
                     }
 
                     let mut cost = dist + next;
-                    cost.round_up(W::zero());
                     if cost > max_distance {
                         continue;
                     }
