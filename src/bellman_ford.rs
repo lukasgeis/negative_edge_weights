@@ -10,7 +10,6 @@ use crate::{graph::*, weight::Weight};
 ///
 /// Returns `Some(distances)` where distances is the distance vector of every node or `None` if a
 /// negative cycle exists
-#[allow(unused)]
 #[inline]
 pub fn bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Node) -> Option<Vec<W>> {
     inner_bellman_ford(graph, Some(source_node))
@@ -58,7 +57,6 @@ fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) ->
                 num_relaxations += 1;
                 if num_relaxations == graph.n() {
                     num_relaxations = 0;
-
                     if !shortest_path_tree_is_acyclic(graph, &predecessors) {
                         return None;
                     }
@@ -77,6 +75,7 @@ fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) ->
 // Check if the shortest path tree is acyclic via TopoSearch
 fn shortest_path_tree_is_acyclic<W: Weight>(graph: &Graph<W>, predecessors: &[Node]) -> bool {
     let mut unused_nodes = BitSet::new_all_set(graph.n());
+    let mut successors: Vec<Vec<Node>> = vec![Vec::new(); graph.n()];
     let mut stack: Vec<Node> = predecessors
         .iter()
         .enumerate()
@@ -84,6 +83,7 @@ fn shortest_path_tree_is_acyclic<W: Weight>(graph: &Graph<W>, predecessors: &[No
             if *u >= graph.n() {
                 Some(v as Node)
             } else {
+                successors[*u].push(v as Node);
                 None
             }
         })
@@ -92,11 +92,9 @@ fn shortest_path_tree_is_acyclic<W: Weight>(graph: &Graph<W>, predecessors: &[No
     while let Some(u) = stack.pop() {
         unused_nodes.unset_bit(u);
 
-        for (_, v, _) in graph.neighbors(u) {
+        for v in &successors[u] {
             // In the SP-Tree, every node has only one incoming edge
-            if unused_nodes[*v] {
-                stack.push(*v);
-            }
+            stack.push(*v);
         }
     }
 

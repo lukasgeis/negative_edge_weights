@@ -81,7 +81,6 @@ impl<W: Weight> Graph<W> {
     }
 
     /// Gets the weight of edge at index `idx`
-    #[allow(unused)]
     #[inline]
     pub fn weight(&self, idx: usize) -> W {
         self.edges[idx].2
@@ -135,8 +134,9 @@ impl<W: Weight> Graph<W> {
         }
     }
 
-    /// Check whether the given potentials are feasible, i.e. the graph has no negative cycle
-    #[allow(unused)]
+    /// Check whether the given potentials are feasible, i.e. the graph has no negative cycle#
+    ///
+    /// Note that this method is subsceptible to floating-point-errors
     #[inline]
     pub fn is_feasible(&self) -> bool {
         self.edges

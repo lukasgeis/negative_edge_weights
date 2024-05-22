@@ -12,9 +12,9 @@ After that navigate to this directory and run:
 cargo build --release
 ```
 
-Alternatively, you can compile with the feature-flag `bf_test` to cross check results with the naive implementation of the MCMC:
+Alternatively, you can compile with the feature-flag `bidir` to use a faster bidirectional dijkstra instead of the normal one:
 ```bash
-cargo build --release --features bf_test 
+cargo build --release --features bidir 
 ```
 
 The binary then can be found under `target/release/random_negative_weights`.
@@ -41,6 +41,7 @@ OPTIONS:
                                 over all edges in random order and set to smallest weight possible [default: 1]
     -t <type>                   The primitive type of edge weights: can be any signed integer or float [default: f64]
     --check                     Run additional NegativeCycleDetector checks before and after the MCMC 
+    --bftest                    Cross-Check decisions by dijkstra with the naive version using Bellman-Ford
     -s <seed>                   Optional starting seed for the RNG 
 
 SUBCOMMANDS:

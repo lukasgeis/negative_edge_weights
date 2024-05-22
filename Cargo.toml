@@ -15,7 +15,6 @@ structopt = "0.3.26"
 [features]
 default = [] # Set default features  
 no_print = [] # Do not print standard outputs - this feature should be used as a sub-feature
-bf_test = [] # Cross-Check Rejections with the naive BF implementation
 dfs_size = ["no_print"] # Log the number of traversed zero edges in Dijkstra 
 bidir = [] # Run a bidirectional Dijkstra instead
 sptree_size = ["no_print"] # Log the size of the shortest path trees in Dijkstra or BiDijkstra

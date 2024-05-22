@@ -108,11 +108,12 @@ where
         if potential_weight >= W::zero() {
             graph.update_weight(idx, weight);
 
-            #[cfg(feature = "bf_test")]
-            assert!(
-                !has_negative_cycle(graph),
-                "[FAIL] BF found a negative weight cycle when Dijkstra accepted directly"
-            );
+            if params.bftest {
+                assert!(
+                    !has_negative_cycle(graph),
+                    "[FAIL] BF found a negative weight cycle when Dijkstra accepted directly"
+                );
+            }
             continue;
         }
 
@@ -122,22 +123,20 @@ where
                 *graph.potential_mut(node) -= potential_weight + dist;
             }
 
-            #[cfg(feature = "bf_test")]
-            assert!(
-                !has_negative_cycle(graph) && graph.is_feasible(),
-                "[FAIL] BF found a negative weight cycle when Dijkstra accepted"
-            );
-        } else {
-            #[cfg(feature = "bf_test")]
-            {
-                let old_weight = graph.weight(idx);
-                graph.update_weight(idx, weight);
+            if params.bftest {
                 assert!(
-                    has_negative_cycle(graph),
-                    "[FAIL] BF found no negative weight cycle when Dijkstra rejected"
+                    !has_negative_cycle(graph),
+                    "[FAIL] BF found a negative weight cycle when Dijkstra accepted"
                 );
-                graph.update_weight(idx, old_weight);
             }
+        } else if params.bftest {
+            let old_weight = graph.weight(idx);
+            graph.update_weight(idx, weight);
+            assert!(
+                has_negative_cycle(graph),
+                "[FAIL] BF found no negative weight cycle when Dijkstra rejected"
+            );
+            graph.update_weight(idx, old_weight);
         }
     }
 }
@@ -162,11 +161,13 @@ where
         let potential_weight = graph.potential_weight((u, v, weight));
         if potential_weight >= W::zero() {
             graph.update_weight(idx, weight);
-            #[cfg(feature = "bf_test")]
-            assert!(
-                !has_negative_cycle(graph),
-                "[FAIL] BF found a negative weight cycle when BiDijkstra accepted directly"
-            );
+
+            if params.bftest {
+                assert!(
+                    !has_negative_cycle(graph),
+                    "[FAIL] BF found a negative weight cycle when BiDijkstra accepted directly"
+                );
+            }
             continue;
         }
 
@@ -180,22 +181,20 @@ where
                 }
             }
 
-            #[cfg(feature = "bf_test")]
-            assert!(
-                !has_negative_cycle(graph) && graph.is_feasible(),
-                "[FAIL] BF found a negative weight cycle when BiDijkstra accepted"
-            );
-        } else {
-            #[cfg(feature = "bf_test")]
-            {
-                let old_weight = graph.weight(idx);
-                graph.update_weight(idx, weight);
+            if params.bftest {
                 assert!(
-                    has_negative_cycle(graph),
-                    "[FAIL] BF found no negative weight cycle when BiDijkstra rejected"
+                    !has_negative_cycle(graph),
+                    "[FAIL] BF found a negative weight cycle when BiDijkstra accepted"
                 );
-                graph.update_weight(idx, old_weight);
             }
+        } else if params.bftest {
+            let old_weight = graph.weight(idx);
+            graph.update_weight(idx, weight);
+            assert!(
+                has_negative_cycle(graph),
+                "[FAIL] BF found no negative weight cycle when BiDijkstra rejected"
+            );
+            graph.update_weight(idx, old_weight);
         }
     }
 }

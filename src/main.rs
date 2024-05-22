@@ -61,6 +61,10 @@ struct Parameters {
     /// Check if the generated graphs have negative weight cycles
     #[structopt(long)]
     check: bool,
+
+    /// Cross-Reference decisions with a naive BF check
+    #[structopt(long)]
+    bftest: bool,
 }
 
 #[derive(StructOpt, Debug, Clone)]
@@ -100,7 +104,6 @@ fn main() {
     };
 }
 
-#[cfg(feature = "bf_test")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -120,10 +123,11 @@ mod tests {
                 seed: Some(1234),
                 output: None,
                 check: true,
+                bftest: true,
             };
 
-            run::<i64>(params.clone(), true);
-            run::<f64>(params, true);
+            run::<i64>(params.clone());
+            run::<f64>(params);
         }
     }
 }
