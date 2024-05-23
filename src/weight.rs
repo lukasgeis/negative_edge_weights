@@ -10,7 +10,7 @@ use std::{
 use num::{One, Zero};
 use rand_distr::uniform::SampleUniform;
 
-use crate::radixheap::Radix;
+use crate::utils::Radix;
 
 /// Generic definition of a weight (typically either `f64` or `i64`)
 pub trait Weight:

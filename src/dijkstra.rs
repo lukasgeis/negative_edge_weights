@@ -1,4 +1,4 @@
-use crate::{graph::*, radixheap::RadixHeap, utils::*, weight::Weight};
+use crate::{graph::*, utils::*, weight::Weight};
 
 /// The states and visited distances of all nodes
 #[derive(Debug, Clone)]

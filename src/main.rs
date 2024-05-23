@@ -13,19 +13,17 @@ use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 use structopt::StructOpt;
 
-use bellman_ford::has_negative_cycle;
+use graph::has_negative_cycle;
 
 #[cfg(test)]
 pub(crate) use graph::test_graph_data as test_data;
 use mcmc::*;
 use weight::{Weight, WeightType};
 
-mod bellman_ford;
 mod bidirectional;
 mod dijkstra;
 mod graph;
 mod mcmc;
-mod radixheap;
 mod utils;
 mod weight;
 

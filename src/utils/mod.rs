@@ -1,3 +1,7 @@
+mod radix;
+
+pub use radix::*;
+
 /// Quick hack to allow a function to return two different iterators over the same item
 pub enum DoubleIterator<I, A, B>
 where

@@ -1,4 +1,4 @@
-use crate::{graph::*, radixheap::RadixHeap, utils::*, weight::Weight};
+use crate::{graph::*, utils::*, weight::Weight};
 
 /// Keep track of all VisitStates
 #[derive(Debug, Clone)]

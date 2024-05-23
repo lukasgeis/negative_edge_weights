@@ -5,6 +5,10 @@ use rand_distr::Geometric;
 
 use crate::{weight::Weight, Source};
 
+mod bellman_ford;
+
+pub use bellman_ford::*;
+
 pub type Node = usize;
 pub type Edge<W> = (Node, Node, W);
 
