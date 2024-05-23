@@ -3,16 +3,25 @@ use rand_distr::{Distribution, Uniform};
 use crate::{graph::*, weight::Weight};
 
 /// The directed scale-free model
+///
+/// Naive generator inspired by [NetworkX](https://networkx.org/documentation/networkx-2.2/_modules/networkx/generators/directed.html#scale_free_graph)
 pub struct DirectedScaleFree {
+    /// Probability for adding a new node with an outgoing edge
     alpha: f64,
+    /// `= 1 - gamma`: probability for **not** adding a new node with an incoming edge
     alpha_plus_beta: f64,
+    ///  Bias for choosing nodes from out-degree distribution
     delta_out: f64,
+    /// Bias for choosing nodes from in-degree distribution
     delta_in: f64,
+    /// Number of nodes
     n: usize,
+    /// Uniform distrbution in [0,1]
     distr: Uniform<f64>,
 }
 
 impl DirectedScaleFree {
+    /// Creates the generator using the specified parameters
     #[inline]
     pub fn new(n: usize, alpha: f64, beta: f64, delta_out: f64, delta_in: f64) -> Self {
         assert!(alpha + beta <= 1.0);

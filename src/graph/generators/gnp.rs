@@ -5,9 +5,9 @@ use crate::{graph::*, weight::Weight};
 
 /// The G(n,p) graph generator
 pub struct Gnp {
+    /// Number of nodes
     n: u64,
-    cur: u64,
-    end: u64,
+    /// Geometric distrbution with specified probability `p`
     distr: Geometric,
 }
 
@@ -19,8 +19,6 @@ impl Gnp {
 
         Self {
             n: n as u64,
-            cur: 0u64,
-            end: (n * n) as u64,
             distr: Geometric::new(p).unwrap(),
         }
     }
@@ -30,19 +28,22 @@ impl<W: Weight> GraphGenerator<W> for Gnp {
     fn generate(&mut self, rng: &mut impl rand::prelude::Rng, default_weight: W) -> Vec<Edge<W>> {
         let mut edges = Vec::new();
 
+        let mut cur = 0u64;
+        let end = self.n * self.n;
+
         loop {
             let skip = rng.sample(self.distr);
-            self.cur = match (self.cur + 1).checked_add(skip) {
+            cur = match (cur + 1).checked_add(skip) {
                 Some(x) => x,
                 None => break,
             };
 
-            if self.cur > self.end {
+            if cur > end {
                 break;
             }
 
-            let u = ((self.cur - 1) / self.n) as Node;
-            let v = ((self.cur - 1) % self.n) as Node;
+            let u = ((cur - 1) / self.n) as Node;
+            let v = ((cur - 1) % self.n) as Node;
 
             edges.push((u, v, default_weight));
         }

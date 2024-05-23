@@ -100,7 +100,7 @@ impl<W: Weight> Graph<W> {
         if !sorted {
             edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (u1, v1).cmp(&(u2, v2)));
         }
-        
+
         // # TODO
         //
         // Currently, the MCMC can generate negative weight cycles when
@@ -110,14 +110,14 @@ impl<W: Weight> Graph<W> {
         // It is currently unknown at which point these algorithms fail.
         // Thus, we remove multi-edges at the beginning. Note that this should still be fixed!
         //
-        // The smalles example current known that fails at time of writing is 
+        // The smalles example current known that fails at time of writing is
         // ```
-        // ./target/release/random_negative_weights -s 1234 -w=-3 -W 10 -t f64 --check -r 10 --bftest --bidir dsf -n 10 -b 0.3 
+        // ./target/release/random_negative_weights -s 1234 -w=-3 -W 10 -t f64 --check -r 10 --bftest --bidir dsf -n 10 -b 0.3
         // ```
         // with `10` nodes and `16` edges if the following line is commented out.
         // Note that the final graph somehow has no negative weight cycle while it has at time of
         // the paniv when enabling `--bftest`.
-        edges.dedup();        
+        // edges.dedup();
 
         let mut curr_edge: usize = 0;
         let limits: Vec<usize> = (0..n)

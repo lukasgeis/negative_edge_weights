@@ -15,11 +15,14 @@ pub trait GraphGenerator<W: Weight> {
 
 /// Generator for complete graphs with/without self-loops
 pub struct Complete {
+    /// Number of nodes
     n: usize,
+    /// Are self-loops allowed?
     loops: bool,
 }
 
 impl Complete {
+    /// Creates the generator with given parameters
     #[inline]
     pub fn new(n: usize, loops: bool) -> Self {
         Self { n, loops }
@@ -46,10 +49,12 @@ impl<W: Weight> GraphGenerator<W> for Complete {
 
 /// A generator for a simple cycle
 pub struct Cycle {
+    /// Number of nodes
     n: usize,
 }
 
 impl Cycle {
+    /// Creates the generator with given parameters
     #[inline]
     pub fn new(n: usize) -> Self {
         Self { n }
