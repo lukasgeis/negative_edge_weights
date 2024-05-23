@@ -117,7 +117,7 @@ impl<W: Weight> Graph<W> {
         // with `10` nodes and `16` edges if the following line is commented out.
         // Note that the final graph somehow has no negative weight cycle while it has at time of
         // the paniv when enabling `--bftest`.
-        // edges.dedup();
+        edges.dedup();
 
         let mut curr_edge: usize = 0;
         let limits: Vec<usize> = (0..n)
