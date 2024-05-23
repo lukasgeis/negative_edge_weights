@@ -75,6 +75,25 @@ enum Source {
         #[structopt(short = "d")]
         avg_deg: f64,
     },
+    Dsf {
+        #[structopt(short = "n")]
+        nodes: Node,
+
+        #[structopt(short = "a")]
+        alpha: Option<f64>,
+
+        #[structopt(short = "b")]
+        beta: Option<f64>,
+
+        #[structopt(short = "g")]
+        gamma: Option<f64>,
+
+        #[structopt(long = "do", default_value = "1")]
+        delta_out: f64,
+
+        #[structopt(long = "di", default_value = "1")]
+        delta_in: f64,
+    },
     Complete {
         #[structopt(short = "n")]
         nodes: Node,

@@ -6,8 +6,10 @@ use rand_distr::Geometric;
 use crate::{weight::Weight, Source};
 
 mod bellman_ford;
+mod generators;
 
 pub use bellman_ford::*;
+pub use generators::*;
 
 pub type Node = usize;
 pub type Edge<W> = (Node, Node, W);
@@ -148,61 +150,6 @@ impl<W: Weight> Graph<W> {
             .all(|e| self.potential_weight(*e) >= W::zero())
     }
 
-    /// Generate a GNP graph with specified default_weight for every edge
-    pub fn gen_gnp(rng: &mut impl Rng, n: usize, p: f64, default_weight: W) -> Self {
-        // TODO: flip probability for `p > 0.5` and generate complement graph
-        assert!((0.0..=1.0).contains(&p));
-
-        let mut edges = Vec::new();
-
-        let geom_distr = Geometric::new(p).unwrap();
-        let mut cur = 0u64;
-        let end = (n * n) as u64;
-
-        loop {
-            let skip = rng.sample(geom_distr);
-            cur = match (cur + 1).checked_add(skip) {
-                Some(x) => x,
-                None => break,
-            };
-
-            if cur > end {
-                break;
-            }
-
-            let u = ((cur - 1) / n as u64) as Node;
-            let v = ((cur - 1) % n as u64) as Node;
-
-            edges.push((u, v, default_weight));
-        }
-
-        Self::from_edge_list(n, edges, true)
-    }
-
-    /// Generates a complete graph with `n` nodes and possible self loops
-    #[inline]
-    pub fn gen_complete(n: usize, self_loops: bool, default_weight: W) -> Self {
-        let edges = (0..n)
-            .flat_map(|u| {
-                (0..n).filter_map(move |v| {
-                    if self_loops || u != v {
-                        Some((u, v, default_weight))
-                    } else {
-                        None
-                    }
-                })
-            })
-            .collect();
-        Self::from_edge_list(n, edges, true)
-    }
-
-    /// Generates a cycle of `n` nodes
-    #[inline]
-    pub fn gen_cycle(n: usize, default_weight: W) -> Self {
-        let edges = (0..n).map(|u| (u, (u + 1) % n, default_weight)).collect();
-        Self::from_edge_list(n, edges, true)
-    }
-
     /// Creates the graph according to the specified source
     #[inline]
     pub fn from_source(source: &Source, rng: &mut impl Rng, default_weight: W) -> Self {
@@ -210,10 +157,49 @@ impl<W: Weight> Graph<W> {
             Source::Gnp { nodes, avg_deg } => {
                 assert!(nodes > 1 && avg_deg > 0.0);
                 let prob = avg_deg / (nodes as f64);
-                Graph::gen_gnp(rng, nodes, prob, default_weight)
+                let mut gnp = Gnp::new(nodes, prob);
+                Graph::from_edge_list(nodes, gnp.generate(rng, default_weight), true)
             }
-            Source::Complete { nodes, loops } => Graph::gen_complete(nodes, loops, default_weight),
-            Source::Cycle { nodes } => Graph::gen_cycle(nodes, default_weight),
+            Source::Dsf {
+                nodes,
+                alpha,
+                beta,
+                gamma,
+                delta_out,
+                delta_in,
+            } => {
+                let (alpha, beta) = if let Some(a) = alpha {
+                    if let Some(b) = beta {
+                        (a, b)
+                    } else if let Some(g) = gamma {
+                        (a, 1.0 - a - g)
+                    } else {
+                        (a, (1.0 - a) / 2.0)
+                    }
+                } else if let Some(b) = beta {
+                    if let Some(g) = gamma {
+                        (1.0 - b - g, b)
+                    } else {
+                        ((1.0 - b) / 2.0, b)
+                    }
+                } else if let Some(g) = gamma {
+                    let t = (1.0 - g) / 2.0;
+                    (t, t)
+                } else {
+                    (1.0 / 3.0, 1.0 / 3.0)
+                };
+
+                let mut dsf = DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in);
+                Graph::from_edge_list(nodes, dsf.generate(rng, default_weight), false)
+            }
+            Source::Complete { nodes, loops } => {
+                let mut complete = Complete::new(nodes, loops);
+                Graph::from_edge_list(nodes, complete.generate(rng, default_weight), true)
+            }
+            Source::Cycle { nodes } => {
+                let mut cycle = Cycle::new(nodes);
+                Graph::from_edge_list(nodes, cycle.generate(rng, default_weight), true)
+            }
         }
     }
 
