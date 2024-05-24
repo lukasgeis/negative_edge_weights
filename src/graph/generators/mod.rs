@@ -4,9 +4,11 @@ use crate::{graph::*, weight::Weight};
 
 mod dsf;
 mod gnp;
+mod rhg;
 
 pub use dsf::*;
 pub use gnp::*;
+pub use rhg::*;
 
 /// A base trait for all graph generators
 pub trait GraphGenerator<W: Weight> {

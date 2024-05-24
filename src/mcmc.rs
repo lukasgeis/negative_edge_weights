@@ -32,7 +32,7 @@ where
 
         #[cfg(not(feature = "no_print"))]
         println!(
-            "[TEST] NegativeCycleFinder run on starting graph in {}ms and found no negative cycle",
+            "[TEST] No negative cycle found in starting graph in {}ms",
             timer.elapsed().as_millis()
         );
     }
@@ -55,7 +55,7 @@ where
 
         #[cfg(not(feature = "no_print"))]
         println!(
-            "[TEST] NegativeCycleFinder run on resulting graph in {}ms and found no negative cycle",
+            "[TEST] No negative cycle found in resulting graph in {}ms",
             timer.elapsed().as_millis()
         );
     }

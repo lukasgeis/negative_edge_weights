@@ -210,6 +210,17 @@ impl<W: Weight> Graph<W> {
                 let mut dsf = DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in);
                 Graph::from_edge_list(nodes, dsf.generate(rng, default_weight), false)
             }
+            Source::Rhg {
+                nodes,
+                alpha,
+                radius,
+                avg_deg,
+                num_bands,
+                prob,
+            } => {
+                let mut rhg = Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob);
+                Graph::from_edge_list(nodes, rhg.generate(rng, default_weight), false)
+            }
             Source::Complete { nodes, loops } => {
                 let mut complete = Complete::new(nodes, loops);
                 Graph::from_edge_list(nodes, complete.generate(rng, default_weight), true)

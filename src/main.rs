@@ -2,6 +2,7 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 #![feature(generic_const_items)]
+#![feature(float_next_up_down)]
 
 use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
 
@@ -69,39 +70,75 @@ struct Parameters {
 #[derive(StructOpt, Debug, Clone)]
 enum Source {
     Gnp {
+        /// Number of nodes
         #[structopt(short = "n")]
         nodes: Node,
 
+        /// Average degree
         #[structopt(short = "d")]
         avg_deg: f64,
     },
     Dsf {
+        /// Number of nodes
         #[structopt(short = "n")]
         nodes: Node,
 
+        /// Probability for adding a new node with an outgoing edge
         #[structopt(short = "a")]
         alpha: Option<f64>,
 
+        /// Probability for adding a new edge between two existing nodes
         #[structopt(short = "b")]
         beta: Option<f64>,
 
+        /// Probability for adding a new node with an incoming edge
         #[structopt(short = "g")]
         gamma: Option<f64>,
 
+        /// Bias for choosing nodes from out-degree distrbution
         #[structopt(long = "do", default_value = "1")]
         delta_out: f64,
 
+        /// Bias for choosing nodes from in-degree distrbution
         #[structopt(long = "di", default_value = "1")]
         delta_in: f64,
     },
-    Complete {
+    Rhg {
+        /// Number of nodes
         #[structopt(short = "n")]
         nodes: Node,
 
+        /// Radial dispersion
+        #[structopt(short = "a", default_value = "1")]
+        alpha: f64,
+
+        /// Radius of hyperbolic disk
+        #[structopt(short = "r")]
+        radius: Option<f64>,
+
+        /// Average degree
+        #[structopt(short = "d")]
+        avg_deg: Option<f64>,
+
+        /// Number of bands
+        #[structopt(short = "b")]
+        num_bands: Option<usize>,
+
+        /// Probability for including two directed edges instead of an undirected one
+        #[structopt(short = "p", default_value = "1")]
+        prob: f64,
+    },
+    Complete {
+        /// Number of nodes
+        #[structopt(short = "n")]
+        nodes: Node,
+
+        /// Are self-loops allowed?
         #[structopt(short = "l", long)]
         loops: bool,
     },
     Cycle {
+        /// Number of nodes
         #[structopt(short = "n")]
         nodes: Node,
     },
