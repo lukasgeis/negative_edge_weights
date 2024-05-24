@@ -94,12 +94,10 @@ impl<W: Weight> Graph<W> {
 
     /// Creates a graph using an edge list and the number of nodes. Since we need `edges` to be
     /// sorted, we can specify whether it already is to skip another sort
-    pub fn from_edge_list(n: usize, mut edges: Vec<Edge<W>>, sorted: bool) -> Self {
+    pub fn from_edge_list(n: usize, mut edges: Vec<Edge<W>>) -> Self {
         assert!(edges.len() > 1);
 
-        if !sorted {
-            edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (u1, v1).cmp(&(u2, v2)));
-        }
+        edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (u1, v1).cmp(&(u2, v2)));
 
         // # TODO
         //
@@ -171,12 +169,11 @@ impl<W: Weight> Graph<W> {
     /// Creates the graph according to the specified source
     #[inline]
     pub fn from_source(source: &Source, rng: &mut impl Rng, default_weight: W) -> Self {
-        match *source {
+        let (n, edges) = match *source {
             Source::Gnp { nodes, avg_deg } => {
                 assert!(nodes > 1 && avg_deg > 0.0);
                 let prob = avg_deg / (nodes as f64);
-                let mut gnp = Gnp::new(nodes, prob);
-                Graph::from_edge_list(nodes, gnp.generate(rng, default_weight), true)
+                (nodes, Gnp::new(nodes, prob).generate(rng, default_weight))
             }
             Source::Dsf {
                 nodes,
@@ -207,8 +204,11 @@ impl<W: Weight> Graph<W> {
                     (1.0 / 3.0, 1.0 / 3.0)
                 };
 
-                let mut dsf = DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in);
-                Graph::from_edge_list(nodes, dsf.generate(rng, default_weight), false)
+                (
+                    nodes,
+                    DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in)
+                        .generate(rng, default_weight),
+                )
             }
             Source::Rhg {
                 nodes,
@@ -217,19 +217,19 @@ impl<W: Weight> Graph<W> {
                 avg_deg,
                 num_bands,
                 prob,
-            } => {
-                let mut rhg = Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob);
-                Graph::from_edge_list(nodes, rhg.generate(rng, default_weight), false)
-            }
-            Source::Complete { nodes, loops } => {
-                let mut complete = Complete::new(nodes, loops);
-                Graph::from_edge_list(nodes, complete.generate(rng, default_weight), true)
-            }
-            Source::Cycle { nodes } => {
-                let mut cycle = Cycle::new(nodes);
-                Graph::from_edge_list(nodes, cycle.generate(rng, default_weight), true)
-            }
-        }
+            } => (
+                nodes,
+                Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob)
+                    .generate(rng, default_weight),
+            ),
+            Source::Complete { nodes, loops } => (
+                nodes,
+                Complete::new(nodes, loops).generate(rng, default_weight),
+            ),
+            Source::Cycle { nodes } => (nodes, Cycle::new(nodes).generate(rng, default_weight)),
+        };
+
+        Graph::from_edge_list(n, edges)
     }
 
     /// Returns the average weight in the graph
