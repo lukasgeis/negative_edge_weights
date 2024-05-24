@@ -1,5 +1,4 @@
 use std::{
-    cmp::Reverse,
     convert::Infallible,
     fmt::{Debug, Display},
     iter::Sum,

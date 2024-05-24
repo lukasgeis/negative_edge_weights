@@ -48,10 +48,9 @@ impl<W: Weight> GraphGenerator<W> for DirectedScaleFree {
 
         let mut cur_num_nodes = 1usize;
 
-        let mut denom_in = 0.0;
-        let mut denom_out = 0.0;
-
-        let mut sampled_value = 0.0;
+        let mut denom_in;
+        let mut denom_out;
+        let mut sampled_value;
 
         let choose_node = |n: usize, deg: &[usize], delta: f64, sampled_times_denom: f64| -> Node {
             let mut cumsum = 0.0;

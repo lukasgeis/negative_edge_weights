@@ -108,18 +108,18 @@ mod tests {
 
     #[test]
     fn test_negative_cycle_finder() {
-        let mut graph = Graph::from_edge_list(5, EDGES.to_vec(), true);
+        let mut graph = Graph::from_edge_list(5, EDGES.to_vec());
 
         for weights in GOOD_WEIGHTS {
             for i in 0..EDGES.len() {
-                graph.update_weight(i, weights[i]);
+                graph.update_weight(i, 0.0, weights[i]);
             }
             assert!(!has_negative_cycle(&graph));
         }
 
         for weights in BAD_WEIGHTS {
             for i in 0..EDGES.len() {
-                graph.update_weight(i, weights[i]);
+                graph.update_weight(i, 0.0, weights[i]);
             }
             assert!(has_negative_cycle(&graph));
         }
@@ -127,11 +127,11 @@ mod tests {
 
     #[test]
     fn test_bellman_ford() {
-        let mut graph = Graph::from_edge_list(5, EDGES.to_vec(), true);
+        let mut graph = Graph::from_edge_list(5, EDGES.to_vec());
 
         for i in 0..GOOD_WEIGHTS.len() {
             for j in 0..EDGES.len() {
-                graph.update_weight(j, GOOD_WEIGHTS[i][j]);
+                graph.update_weight(j, 0.0, GOOD_WEIGHTS[i][j]);
             }
             let res: Vec<Vec<f64>> = DISTANCES[i].into_iter().map(|s| s.to_vec()).collect();
 

@@ -4,9 +4,8 @@ use std::{
     vec,
 };
 
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 use rand_distr::Uniform;
-use rand_pcg::Pcg64;
 
 #[derive(Debug, Clone, Copy)]
 struct Coord {

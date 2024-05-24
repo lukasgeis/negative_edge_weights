@@ -1,4 +1,3 @@
-use num::CheckedAdd;
 use rand_distr::Geometric;
 
 use crate::{graph::*, weight::Weight};

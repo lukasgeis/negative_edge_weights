@@ -1,7 +1,6 @@
 use std::{fmt::Debug, io::Write};
 
 use rand::Rng;
-use rand_distr::Geometric;
 
 use crate::{weight::Weight, Source};
 
@@ -73,13 +72,15 @@ impl<W: Weight> Graph<W> {
     }
 
     /// Updates the weight of the edge at index `idx` in `edges`
+    ///
+    /// TODO: find better update method
     #[inline]
-    pub fn update_weight(&mut self, idx: usize, weight: W) {
+    pub fn update_weight(&mut self, idx: usize, old_weight: W, weight: W) {
         self.edges[idx].2 = weight;
 
         let (u, v, _) = self.edges[idx];
         for i in self.rev_limits[v]..self.rev_limits[v + 1] {
-            if self.rev_edges[i].0 == u {
+            if self.rev_edges[i].0 == u && self.rev_edges[i].2 == old_weight {
                 self.rev_edges[i].2 = weight;
                 break;
             }
@@ -98,24 +99,6 @@ impl<W: Weight> Graph<W> {
         assert!(edges.len() > 1);
 
         edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (u1, v1).cmp(&(u2, v2)));
-
-        // # TODO
-        //
-        // Currently, the MCMC can generate negative weight cycles when
-        // - there exist multi-edges
-        // - we use the bidirectional search
-        //
-        // It is currently unknown at which point these algorithms fail.
-        // Thus, we remove multi-edges at the beginning. Note that this should still be fixed!
-        //
-        // The smalles example current known that fails at time of writing is
-        // ```
-        // ./target/release/random_negative_weights -s 1234 -w=-3 -W 10 -t f64 --check -r 10 --bftest --bidir dsf -n 10 -b 0.3
-        // ```
-        // with `10` nodes and `16` edges if the following line is commented out.
-        // Note that the final graph somehow has no negative weight cycle while it has at time of
-        // the paniv when enabling `--bftest`.
-        edges.dedup();
 
         let mut curr_edge: usize = 0;
         let limits: Vec<usize> = (0..n)

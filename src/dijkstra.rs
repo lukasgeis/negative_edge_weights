@@ -159,7 +159,7 @@ where
                     }
 
                     let succ = *succ;
-                    let mut next = graph.potential_weight((node, succ, *weight));
+                    let next = graph.potential_weight((node, succ, *weight));
                     if next <= W::zero() && self.visit_states.queue_node(succ, dist) {
                         if succ == target_node && dist < max_distance {
                             #[cfg(feature = "sptree_size")]
@@ -223,12 +223,12 @@ mod tests {
 
     #[test]
     fn test_dijkstra() {
-        let mut graph = Graph::from_edge_list(5, EDGES.to_vec(), true);
+        let mut graph = Graph::from_edge_list(5, EDGES.to_vec());
 
         let mut dijsktra = Dijkstra::new(graph.n());
 
         for j in 0..EDGES.len() {
-            graph.update_weight(j, GOOD_WEIGHTS[2][j]);
+            graph.update_weight(j, 0.0, GOOD_WEIGHTS[2][j]);
         }
         let res: Vec<Vec<f64>> = DISTANCES[2].into_iter().map(|s| s.to_vec()).collect();
 

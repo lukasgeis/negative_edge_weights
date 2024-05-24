@@ -2,8 +2,6 @@
 
 use num::Zero;
 
-use crate::weight::Weight;
-
 pub trait Radix {
     const NUM_BITS: usize;
 
