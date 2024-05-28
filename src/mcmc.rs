@@ -164,8 +164,6 @@ pub(crate) fn run_mcmc_bidirectional<W>(
             continue;
         }
 
-./target/release/random_negative_weights -s 1234 -w=-3 -W 10 -t f64 --check -r 10 \
-     --bftest --bidir dsf -n 10 -b 0.3
         if let Some(((df, db), shortest_path_tree)) = dijkstra.run(graph, v, u, -potential_weight) {
             graph.update_weight(idx, w, weight);
             for (node, dist) in shortest_path_tree {
