@@ -92,12 +92,12 @@ where
     );
 
     for _ in 0..num_rounds {
-        let (idx, (u, v, w)) = graph.random_edge(rng);
+        let (idx, edge) = graph.random_edge(rng);
         let weight = sampler.sample(rng);
 
-        let potential_weight = graph.potential_weight((u, v, weight));
+        let potential_weight = graph.potential_weight((edge.source, edge.target, weight).into());
         if potential_weight >= W::zero() {
-            graph.update_weight(idx, w, weight);
+            graph.update_weight(idx, edge.weight, weight);
 
             if params.bftest {
                 assert!(
@@ -108,8 +108,10 @@ where
             continue;
         }
 
-        if let Some(shortest_path_tree) = dijkstra.run(graph, v, u, -potential_weight) {
-            graph.update_weight(idx, w, weight);
+        if let Some(shortest_path_tree) =
+            dijkstra.run(graph, edge.target, edge.source, -potential_weight)
+        {
+            graph.update_weight(idx, edge.weight, weight);
             for (node, dist) in shortest_path_tree {
                 *graph.potential_mut(node) -= potential_weight + dist;
             }
@@ -121,12 +123,12 @@ where
                 );
             }
         } else if params.bftest {
-            graph.update_weight(idx, w, weight);
+            graph.update_weight(idx, edge.weight, weight);
             assert!(
                 has_negative_cycle(graph),
                 "[FAIL] BF found no negative weight cycle when Dijkstra rejected"
             );
-            graph.update_weight(idx, weight, w);
+            graph.update_weight(idx, weight, edge.weight);
         }
     }
 }
@@ -148,12 +150,12 @@ pub(crate) fn run_mcmc_bidirectional<W>(
     );
 
     for _ in 0..num_rounds {
-        let (idx, (u, v, w)) = graph.random_edge(rng);
+        let (idx, edge) = graph.random_edge(rng);
         let weight = sampler.sample(rng);
 
-        let potential_weight = graph.potential_weight((u, v, weight));
+        let potential_weight = graph.potential_weight((edge.source, edge.target, weight).into());
         if potential_weight >= W::zero() {
-            graph.update_weight(idx, w, weight);
+            graph.update_weight(idx, edge.weight, weight);
 
             if params.bftest {
                 assert!(
@@ -164,8 +166,10 @@ pub(crate) fn run_mcmc_bidirectional<W>(
             continue;
         }
 
-        if let Some(((df, db), shortest_path_tree)) = dijkstra.run(graph, v, u, -potential_weight) {
-            graph.update_weight(idx, w, weight);
+        if let Some(((df, db), shortest_path_tree)) =
+            dijkstra.run(graph, edge.target, edge.source, -potential_weight)
+        {
+            graph.update_weight(idx, edge.weight, weight);
             for (node, dist) in shortest_path_tree {
                 if node < graph.n() {
                     *graph.potential_mut(node) += df - dist;
@@ -181,12 +185,12 @@ pub(crate) fn run_mcmc_bidirectional<W>(
                 );
             }
         } else if params.bftest {
-            graph.update_weight(idx, w, weight);
+            graph.update_weight(idx, edge.weight, weight);
             assert!(
                 has_negative_cycle(graph),
                 "[FAIL] BF found no negative weight cycle when BiDijkstra rejected"
             );
-            graph.update_weight(idx, weight, w);
+            graph.update_weight(idx, weight, edge.weight);
         }
     }
 }

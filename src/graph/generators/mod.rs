@@ -40,7 +40,7 @@ impl<W: Weight> GraphGenerator<W> for Complete {
                 let v = (x % self.n) as Node;
 
                 if u != v || self.loops {
-                    Some((u, v, default_weight))
+                    Some((u, v, default_weight).into())
                 } else {
                     None
                 }
@@ -67,7 +67,7 @@ impl<W: Weight> GraphGenerator<W> for Cycle {
     #[inline]
     fn generate(&mut self, _: &mut impl Rng, default_weight: W) -> Vec<Edge<W>> {
         (0..self.n)
-            .map(|u| (u as Node, ((u + 1) % self.n) as Node, default_weight))
+            .map(|u| (u as Node, ((u + 1) % self.n) as Node, default_weight).into())
             .collect()
     }
 }

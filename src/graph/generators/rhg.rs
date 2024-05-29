@@ -317,14 +317,14 @@ fn generate_threshold_rhg<W: Weight>(
                         if within_inner {
                             match rhg.decide_edge(rng) {
                                 EdgeResult::Both => {
-                                    edges.push((v.id, w.id, default_weight));
-                                    edges.push((w.id, v.id, default_weight));
+                                    edges.push((v.id, w.id, default_weight).into());
+                                    edges.push((w.id, v.id, default_weight).into());
                                 }
                                 EdgeResult::Forward => {
-                                    edges.push((v.id, w.id, default_weight));
+                                    edges.push((v.id, w.id, default_weight).into());
                                 }
                                 EdgeResult::Backward => {
-                                    edges.push((w.id, v.id, default_weight));
+                                    edges.push((w.id, v.id, default_weight).into());
                                 }
                             };
                         } else {
@@ -335,14 +335,14 @@ fn generate_threshold_rhg<W: Weight>(
                             if dist_cosh < radius_cosh {
                                 match rhg.decide_edge(rng) {
                                     EdgeResult::Both => {
-                                        edges.push((v.id, w.id, default_weight));
-                                        edges.push((w.id, v.id, default_weight));
+                                        edges.push((v.id, w.id, default_weight).into());
+                                        edges.push((w.id, v.id, default_weight).into());
                                     }
                                     EdgeResult::Forward => {
-                                        edges.push((v.id, w.id, default_weight));
+                                        edges.push((v.id, w.id, default_weight).into());
                                     }
                                     EdgeResult::Backward => {
-                                        edges.push((w.id, v.id, default_weight));
+                                        edges.push((w.id, v.id, default_weight).into());
                                     }
                                 };
                             }

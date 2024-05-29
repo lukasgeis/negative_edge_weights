@@ -11,7 +11,47 @@ pub use bellman_ford::*;
 pub use generators::*;
 
 pub type Node = usize;
-pub type Edge<W> = (Node, Node, W);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Edge<W: Weight> {
+    pub source: Node,
+    pub target: Node,
+    pub weight: W,
+}
+
+impl<W: Weight> Eq for Edge<W> {}
+
+impl<W: Weight> PartialOrd for Edge<W> {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<W: Weight> Ord for Edge<W> {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (self.source, self.target).cmp(&(other.source, other.target))
+    }
+}
+
+impl<W: Weight> From<(Node, Node, W)> for Edge<W> {
+    #[inline]
+    fn from(value: (Node, Node, W)) -> Self {
+        Self {
+            source: value.0,
+            target: value.1,
+            weight: value.2,
+        }
+    }
+}
+
+impl<W: Weight> From<Edge<W>> for (Node, Node, W) {
+    #[inline]
+    fn from(value: Edge<W>) -> Self {
+        (value.source, value.target, value.weight)
+    }
+}
 
 #[derive(Clone)]
 pub struct Graph<W: Weight> {
@@ -61,7 +101,7 @@ impl<W: Weight> Graph<W> {
     /// Returns the potential weight of an edge `(u,v,w)`, i.e. `w - p[u] + p[v]`
     #[inline]
     pub fn potential_weight(&self, edge: Edge<W>) -> W {
-        edge.2 + self.potentials[edge.1] - self.potentials[edge.0]
+        edge.weight + self.potentials[edge.target] - self.potentials[edge.source]
     }
 
     /// Returns a uniform random edge from the graph and its index in `edges`
@@ -75,13 +115,13 @@ impl<W: Weight> Graph<W> {
     ///
     /// TODO: find better update method
     #[inline]
-    pub fn update_weight(&mut self, idx: usize, old_weight: W, weight: W) {
-        self.edges[idx].2 = weight;
+    pub fn update_weight(&mut self, idx: usize, old_weight: W, new_weight: W) {
+        self.edges[idx].weight = new_weight;
 
-        let (u, v, _) = self.edges[idx];
+        let (u, v, _) = self.edges[idx].into();
         for i in self.rev_limits[v]..self.rev_limits[v + 1] {
-            if self.rev_edges[i].0 == u && self.rev_edges[i].2 == old_weight {
-                self.rev_edges[i].2 = weight;
+            if self.rev_edges[i].source == u && self.rev_edges[i].weight == old_weight {
+                self.rev_edges[i].weight = new_weight;
                 break;
             }
         }
@@ -90,7 +130,7 @@ impl<W: Weight> Graph<W> {
     /// Gets the weight of edge at index `idx`
     #[inline]
     pub fn weight(&self, idx: usize) -> W {
-        self.edges[idx].2
+        self.edges[idx].weight
     }
 
     /// Creates a graph using an edge list and the number of nodes. Since we need `edges` to be
@@ -98,12 +138,12 @@ impl<W: Weight> Graph<W> {
     pub fn from_edge_list(n: usize, mut edges: Vec<Edge<W>>) -> Self {
         assert!(edges.len() > 1);
 
-        edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (u1, v1).cmp(&(u2, v2)));
+        edges.sort_unstable();
 
         let mut curr_edge: usize = 0;
         let limits: Vec<usize> = (0..n)
             .map(|i| {
-                while curr_edge < edges.len() && edges[curr_edge].0 < i {
+                while curr_edge < edges.len() && edges[curr_edge].source < i {
                     curr_edge += 1;
                 }
                 curr_edge
@@ -113,12 +153,13 @@ impl<W: Weight> Graph<W> {
 
         let (rev_edges, rev_limits) = {
             let mut rev_edges = edges.clone();
-            rev_edges.sort_unstable_by(|(u1, v1, _), (u2, v2, _)| (v1, u1).cmp(&(v2, u2)));
+            rev_edges
+                .sort_unstable_by(|e1, e2| (e1.target, e1.source).cmp(&(e2.target, e2.source)));
 
             curr_edge = 0;
             let rev_limits: Vec<usize> = (0..n)
                 .map(|i| {
-                    while curr_edge < rev_edges.len() && rev_edges[curr_edge].1 < i {
+                    while curr_edge < rev_edges.len() && rev_edges[curr_edge].target < i {
                         curr_edge += 1;
                     }
                     curr_edge
@@ -218,20 +259,20 @@ impl<W: Weight> Graph<W> {
     /// Returns the average weight in the graph
     #[inline]
     pub fn avg_weight(&self) -> f64 {
-        self.edges.iter().map(|(_, _, w)| *w).sum::<W>().to_f64() / self.m() as f64
+        self.edges.iter().map(|e| e.weight).sum::<W>().to_f64() / self.m() as f64
     }
 
     /// Returns the fraction of negative edges in the graph
     #[inline]
     pub fn frac_negative_edges(&self) -> f64 {
-        self.edges.iter().filter(|(_, _, w)| *w < W::zero()).count() as f64 / self.m() as f64
+        self.edges.iter().filter(|e| e.weight < W::zero()).count() as f64 / self.m() as f64
     }
 
     /// Write the graph into an output
     #[inline]
     pub fn store_graph<WB: Write>(&self, writer: &mut WB) -> std::io::Result<()> {
-        for (u, v, w) in &self.edges {
-            writeln!(writer, "{u},{v},{w}")?
+        for edge in &self.edges {
+            writeln!(writer, "{},{},{}", edge.source, edge.target, edge.weight)?
         }
         Ok(())
     }
@@ -242,11 +283,13 @@ impl<W: Weight> Debug for Graph<W> {
         writeln!(f, "\n<== Graph with {} nodes and {} edges ==>\n\nEdge = (source, target, weight, potential weight)", self.n(), self.m())?;
         for u in 0..self.n() {
             write!(f, "Outgoing edges from {u} => ")?;
-            for (_, v, w) in self.neighbors(u) {
+            for edge in self.neighbors(u) {
                 write!(
                     f,
-                    "  ({u}, {v}, {w}, {})",
-                    self.potential_weight((u, *v, *w))
+                    "  ({u}, {}, {}, {})",
+                    edge.target,
+                    edge.weight,
+                    self.potential_weight(*edge)
                 )?;
             }
             writeln!(f)?;
@@ -262,7 +305,7 @@ pub(crate) mod test_graph_data {
     /// A graph with `5` nodes and `10` edges
     ///
     /// Image: `https://dreampuf.github.io/GraphvizOnline/#digraph%20G%20%7Bv0%20-%3E%20%7Bv1%2C%20v2%7D%3Bv1%20-%3E%20%7Bv3%2C%20v4%7D%3Bv2%20-%3E%20%7Bv1%2C%20v3%7D%3Bv3%20-%3E%20%7Bv0%2C%20v1%2C%20v4%7D%3Bv4%20-%3E%20%7Bv0%7D%3B%7D`
-    pub(crate) const EDGES: [Edge<f64>; 10] = [
+    pub(crate) const EDGES: [(Node, Node, f64); 10] = [
         (0, 1, 1.0),
         (0, 2, 1.0),
         (1, 3, 1.0),

@@ -50,10 +50,10 @@ fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) ->
     while let Some(u) = queue.pop_front() {
         in_queue.unset_bit(u);
 
-        for (_, v, w) in graph.neighbors(u) {
-            if distances[u] + *w < distances[*v] {
-                distances[*v] = distances[u] + *w;
-                predecessors[*v] = u;
+        for edge in graph.neighbors(u) {
+            if distances[u] + edge.weight < distances[edge.target] {
+                distances[edge.target] = distances[u] + edge.weight;
+                predecessors[edge.target] = u;
                 num_relaxations += 1;
                 if num_relaxations == graph.n() {
                     num_relaxations = 0;
@@ -62,8 +62,8 @@ fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) ->
                     }
                 }
 
-                if !in_queue.set_bit(*v) {
-                    queue.push_back(*v);
+                if !in_queue.set_bit(edge.target) {
+                    queue.push_back(edge.target);
                 }
             }
         }
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_negative_cycle_finder() {
-        let mut graph = Graph::from_edge_list(5, EDGES.to_vec());
+        let mut graph = Graph::from_edge_list(5, EDGES.into_iter().map(|e| e.into()).collect());
 
         for weights in GOOD_WEIGHTS {
             for i in 0..EDGES.len() {
@@ -127,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_bellman_ford() {
-        let mut graph = Graph::from_edge_list(5, EDGES.to_vec());
+        let mut graph = Graph::from_edge_list(5, EDGES.into_iter().map(|e| e.into()).collect());
 
         for i in 0..GOOD_WEIGHTS.len() {
             for j in 0..EDGES.len() {

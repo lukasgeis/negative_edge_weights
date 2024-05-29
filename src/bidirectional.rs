@@ -219,14 +219,14 @@ where
                         nodes_visited_f += 1;
                     }
 
-                    for (_, succ, weight) in graph.neighbors(heapf_node) {
+                    for edge in graph.neighbors(heapf_node) {
                         #[cfg(feature = "sptree_size")]
                         {
                             edges_traversed_f += 1;
                         }
 
-                        let succ = *succ;
-                        let mut cost = dist + graph.potential_weight((heapf_node, succ, *weight));
+                        let succ = edge.target;
+                        let mut cost = dist + graph.potential_weight(*edge);
                         cost.round_up(self.heapf.top());
                         match self
                             .visit_states
@@ -265,14 +265,14 @@ where
                         nodes_visited_b += 1;
                     }
 
-                    for (pred, _, weight) in graph.in_neighbors(heapb_node) {
+                    for edge in graph.in_neighbors(heapb_node) {
                         #[cfg(feature = "sptree_size")]
                         {
                             edges_traversed_b += 1;
                         }
 
-                        let pred = *pred;
-                        let mut cost = dist + graph.potential_weight((pred, heapb_node, *weight));
+                        let pred = edge.source;
+                        let mut cost = dist + graph.potential_weight(*edge);
                         cost.round_up(self.heapb.top());
                         match self
                             .visit_states

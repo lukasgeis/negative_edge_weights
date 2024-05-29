@@ -44,7 +44,7 @@ impl<W: Weight> GraphGenerator<W> for Gnp {
             let u = ((cur - 1) / self.n) as Node;
             let v = ((cur - 1) % self.n) as Node;
 
-            edges.push((u, v, default_weight));
+            edges.push((u, v, default_weight).into());
         }
 
         edges

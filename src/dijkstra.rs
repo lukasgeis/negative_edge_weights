@@ -152,14 +152,14 @@ where
                     nodes_visited += 1;
                 }
 
-                for (_, succ, weight) in graph.neighbors(node) {
+                for edge in graph.neighbors(node) {
                     #[cfg(feature = "sptree_size")]
                     {
                         edges_traversed += 1;
                     }
 
-                    let succ = *succ;
-                    let next = graph.potential_weight((node, succ, *weight));
+                    let succ = edge.target;
+                    let next = graph.potential_weight(*edge);
                     if next <= W::zero() && self.visit_states.queue_node(succ, dist) {
                         if succ == target_node && dist < max_distance {
                             #[cfg(feature = "sptree_size")]
@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_dijkstra() {
-        let mut graph = Graph::from_edge_list(5, EDGES.to_vec());
+        let mut graph = Graph::from_edge_list(5, EDGES.into_iter().map(|e| e.into()).collect());
 
         let mut dijsktra = Dijkstra::new(graph.n());
 

@@ -117,7 +117,7 @@ impl<W: Weight> GraphGenerator<W> for DirectedScaleFree {
             out_degrees[u] += 1;
             in_degrees[v] += 1;
 
-            edges.push((u, v, default_weight));
+            edges.push((u, v, default_weight).into());
         }
 
         edges
