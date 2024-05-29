@@ -115,9 +115,9 @@ where
     ///
     /// In case (1) return `Some(SP)` where `SP` is an iterator over the shortest path tree found
     /// by dijkstra. In case (2) return `None`.
-    pub fn run(
+    pub fn run<G: Graph<W>>(
         &mut self,
-        graph: &Graph<W>,
+        graph: &G,
         source_node: Node,
         target_node: Node,
         max_distance: W,
@@ -152,7 +152,7 @@ where
                     nodes_visited += 1;
                 }
 
-                for edge in graph.neighbors(node) {
+                for edge in graph.out_neighbors(node) {
                     #[cfg(feature = "sptree_size")]
                     {
                         edges_traversed += 1;
@@ -223,12 +223,12 @@ mod tests {
 
     #[test]
     fn test_dijkstra() {
-        let mut graph = Graph::from_edge_list(5, EDGES.into_iter().map(|e| e.into()).collect());
+        let mut graph = OneDirGraph::from_edges(5, EDGES.into_iter().map(|e| e.into()).collect());
 
         let mut dijsktra = Dijkstra::new(graph.n());
 
         for j in 0..EDGES.len() {
-            graph.update_weight(j, 0.0, GOOD_WEIGHTS[2][j]);
+            graph.update_weight(j, GOOD_WEIGHTS[2][j]);
         }
         let res: Vec<Vec<f64>> = DISTANCES[2].into_iter().map(|s| s.to_vec()).collect();
 

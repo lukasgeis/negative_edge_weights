@@ -14,8 +14,6 @@ use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 use structopt::StructOpt;
 
-use graph::has_negative_cycle;
-
 #[cfg(test)]
 pub(crate) use graph::test_graph_data as test_data;
 use mcmc::*;
@@ -185,16 +183,16 @@ mod tests {
             };
 
             let default_weight = i64::from_f64(params.max_weight);
-            let mut graph: Graph<i64> =
-                Graph::from_source(&params.source, &mut rng, default_weight);
-            run_mcmc::<i64>(&mut rng, &mut graph, &params);
-            run_mcmc_bidirectional::<i64>(&mut rng, &mut graph, &params);
+            let mut graph: TwoDirGraph<i64> =
+                TwoDirGraph::from_source(&params.source, &mut rng, default_weight);
+            run_mcmc(&mut rng, &mut graph, &params);
+            run_mcmc_bidirectional(&mut rng, &mut graph, &params);
 
             let default_weight = f64::from_f64(params.max_weight);
-            let mut graph: Graph<f64> =
-                Graph::from_source(&params.source, &mut rng, default_weight);
-            run_mcmc::<f64>(&mut rng, &mut graph, &params);
-            run_mcmc_bidirectional::<f64>(&mut rng, &mut graph, &params)
+            let mut graph: TwoDirGraph<f64> =
+                TwoDirGraph::from_source(&params.source, &mut rng, default_weight);
+            run_mcmc(&mut rng, &mut graph, &params);
+            run_mcmc_bidirectional(&mut rng, &mut graph, &params)
         }
     }
 }

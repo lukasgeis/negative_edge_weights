@@ -1,9 +1,24 @@
 use crate::*;
 
+#[inline]
 pub(crate) fn run<W>(params: Parameters)
 where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
+{
+    if params.bidir {
+        run_with_graph::<W, TwoDirGraph<W>>(params);
+    } else {
+        run_with_graph::<W, OneDirGraph<W>>(params);
+    }
+}
+
+#[inline]
+pub(crate) fn run_with_graph<W, G>(params: Parameters)
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+    G: Graph<W>,
 {
     let mut rng = if let Some(seed) = params.seed {
         Pcg64::seed_from_u64(seed)
@@ -13,7 +28,7 @@ where
 
     let mut timer = Instant::now();
     let default_weight = W::from_f64(params.max_weight);
-    let mut graph: Graph<W> = Graph::from_source(&params.source, &mut rng, default_weight);
+    let mut graph: G = G::from_source(&params.source, &mut rng, default_weight);
 
     #[cfg(not(feature = "no_print"))]
     println!(
@@ -79,25 +94,28 @@ where
 }
 
 /// Runs the MCMC on the graph with the specified parameters
-pub(crate) fn run_mcmc<W>(rng: &mut impl Rng, graph: &mut Graph<W>, params: &Parameters)
+pub(crate) fn run_mcmc<W, G>(rng: &mut impl Rng, graph: &mut G, params: &Parameters)
 where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
+    G: Graph<W>,
 {
     let num_rounds = (graph.m() as f64 * params.rounds_per_edge).ceil() as u64;
     let mut dijkstra = Dijkstra::new(graph.n());
-    let sampler = Uniform::new(
+    let weight_sampler = Uniform::new_inclusive(
         W::from_f64(params.min_weight),
         W::from_f64(params.max_weight),
     );
+    let edge_sampler = Uniform::new(0usize, graph.m());
 
     for _ in 0..num_rounds {
-        let (idx, edge) = graph.random_edge(rng);
-        let weight = sampler.sample(rng);
+        let idx = edge_sampler.sample(rng);
+        let edge = graph.edge(idx);
+        let weight = weight_sampler.sample(rng);
 
         let potential_weight = graph.potential_weight((edge.source, edge.target, weight).into());
         if potential_weight >= W::zero() {
-            graph.update_weight(idx, edge.weight, weight);
+            graph.update_weight(idx, weight);
 
             if params.bftest {
                 assert!(
@@ -111,9 +129,9 @@ where
         if let Some(shortest_path_tree) =
             dijkstra.run(graph, edge.target, edge.source, -potential_weight)
         {
-            graph.update_weight(idx, edge.weight, weight);
+            graph.update_weight(idx, weight);
             for (node, dist) in shortest_path_tree {
-                *graph.potential_mut(node) -= potential_weight + dist;
+                graph.update_potential(node, -potential_weight - dist);
             }
 
             if params.bftest {
@@ -123,39 +141,39 @@ where
                 );
             }
         } else if params.bftest {
-            graph.update_weight(idx, edge.weight, weight);
+            graph.update_weight(idx, weight);
             assert!(
                 has_negative_cycle(graph),
                 "[FAIL] BF found no negative weight cycle when Dijkstra rejected"
             );
-            graph.update_weight(idx, weight, edge.weight);
+            graph.update_weight(idx, edge.weight);
         }
     }
 }
 
 /// Runs the MCMC using a bidirectional dijkstra search
-pub(crate) fn run_mcmc_bidirectional<W>(
-    rng: &mut impl Rng,
-    graph: &mut Graph<W>,
-    params: &Parameters,
-) where
+pub(crate) fn run_mcmc_bidirectional<W, G>(rng: &mut impl Rng, graph: &mut G, params: &Parameters)
+where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
+    G: Graph<W>,
 {
     let num_rounds = (graph.m() as f64 * params.rounds_per_edge).ceil() as u64;
     let mut dijkstra = BiDijkstra::new(graph.n());
-    let sampler = Uniform::new(
+    let weight_sampler = Uniform::new_inclusive(
         W::from_f64(params.min_weight),
         W::from_f64(params.max_weight),
     );
+    let edge_sampler = Uniform::new(0usize, graph.m());
 
     for _ in 0..num_rounds {
-        let (idx, edge) = graph.random_edge(rng);
-        let weight = sampler.sample(rng);
+        let idx = edge_sampler.sample(rng);
+        let edge = graph.edge(idx);
+        let weight = weight_sampler.sample(rng);
 
         let potential_weight = graph.potential_weight((edge.source, edge.target, weight).into());
         if potential_weight >= W::zero() {
-            graph.update_weight(idx, edge.weight, weight);
+            graph.update_weight(idx, weight);
 
             if params.bftest {
                 assert!(
@@ -169,12 +187,12 @@ pub(crate) fn run_mcmc_bidirectional<W>(
         if let Some(((df, db), shortest_path_tree)) =
             dijkstra.run(graph, edge.target, edge.source, -potential_weight)
         {
-            graph.update_weight(idx, edge.weight, weight);
+            graph.update_weight(idx, weight);
             for (node, dist) in shortest_path_tree {
                 if node < graph.n() {
-                    *graph.potential_mut(node) += df - dist;
+                    graph.update_potential(node, df - dist);
                 } else {
-                    *graph.potential_mut(node - graph.n()) -= db - dist;
+                    graph.update_potential(node - graph.n(), dist - db);
                 }
             }
 
@@ -185,12 +203,12 @@ pub(crate) fn run_mcmc_bidirectional<W>(
                 );
             }
         } else if params.bftest {
-            graph.update_weight(idx, edge.weight, weight);
+            graph.update_weight(idx, weight);
             assert!(
                 has_negative_cycle(graph),
                 "[FAIL] BF found no negative weight cycle when BiDijkstra rejected"
             );
-            graph.update_weight(idx, weight, edge.weight);
+            graph.update_weight(idx, edge.weight);
         }
     }
 }

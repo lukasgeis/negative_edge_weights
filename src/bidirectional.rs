@@ -171,9 +171,9 @@ where
     /// Otherwise, return `Some(((df, db), it))` where `df` is the maximum visited distance in the
     /// forward-search, `db` the maximum visited distance in the backward-search and `it` an
     /// iterator over the node-distance pairs in the shortest path trees
-    pub fn run(
+    pub fn run<G: Graph<W>>(
         &mut self,
-        graph: &Graph<W>,
+        graph: &G,
         source_node: Node,
         target_node: Node,
         max_distance: W,
@@ -219,7 +219,7 @@ where
                         nodes_visited_f += 1;
                     }
 
-                    for edge in graph.neighbors(heapf_node) {
+                    for edge in graph.out_neighbors(heapf_node) {
                         #[cfg(feature = "sptree_size")]
                         {
                             edges_traversed_f += 1;

@@ -6,12 +6,16 @@ use crate::{weight::Weight, Source};
 
 mod bellman_ford;
 mod generators;
+mod repr;
 
 pub use bellman_ford::*;
 pub use generators::*;
+pub use repr::*;
 
+/// Node of a graph
 pub type Node = usize;
 
+/// A weighted directed edge consists of a `source`, `target`, and `weight`
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Edge<W: Weight> {
     pub source: Node,
@@ -53,146 +57,75 @@ impl<W: Weight> From<Edge<W>> for (Node, Node, W) {
     }
 }
 
-#[derive(Clone)]
-pub struct Graph<W: Weight> {
-    /// List of all edges sorted by source node
-    edges: Vec<Edge<W>>,
-    /// `limits[u]` is the index of the first edge with source `u` in `edges`
-    limits: Vec<usize>,
-    /// List of node potentials
-    potentials: Vec<W>,
-    /// List of all edges sorted by target node
-    rev_edges: Vec<Edge<W>>,
-    /// `rev_limits[u]` is the index of the first edge with target `u` in `rev_edges`
-    rev_limits: Vec<usize>,
-}
+pub trait Graph<W: Weight>: Sized {
+    /// Gets the number of nodes
+    fn n(&self) -> usize;
 
-impl<W: Weight> Graph<W> {
-    /// Get the number of nodes
+    /// Gets the number of edges
+    fn m(&self) -> usize;
+
+    /// Gets the potential of a node `u`
+    fn potential(&self, u: Node) -> W;
+
+    /// Gets the potential weight of an edge
     #[inline]
-    pub fn n(&self) -> usize {
-        self.limits.len() - 1
+    fn potential_weight(&self, edge: Edge<W>) -> W {
+        edge.weight + self.potential(edge.target) - self.potential(edge.source)
     }
 
-    /// Get the number of edges
+    /// Adds `delta` to `potential[u]`
+    fn update_potential(&mut self, u: Node, delta: W);
+
+    /// Gets the edge at index `idx`
+    fn edge(&self, idx: usize) -> Edge<W>;
+
+    /// Updates the weight of the edge at index `idx` from `old_weight` to `new_weight`
+    fn update_weight(&mut self, idx: usize, new_weight: W);
+
+    /// Returns a slice over all outgoing edges of `u`
+    fn out_neighbors(&self, u: Node) -> &[Edge<W>];
+
+    /// Returns a slive over all incoming edges of `u`
+    fn in_neighbors(&self, u: Node) -> &[Edge<W>];
+
+    /// Returns a slice over all edges
+    fn edges(&self) -> &[Edge<W>];
+
+    /// Returns *true* if the graph is feasible, i.e. if all potential non-negativee
     #[inline]
-    pub fn m(&self) -> usize {
-        self.edges.len()
-    }
-
-    /// Returns a slice over all outgoing edges from source node `u`
-    #[inline]
-    pub fn neighbors(&self, u: Node) -> &[Edge<W>] {
-        &self.edges[self.limits[u]..self.limits[u + 1]]
-    }
-
-    /// Returns a slice over all incoming edges to target node `u`
-    #[inline]
-    pub fn in_neighbors(&self, u: Node) -> &[Edge<W>] {
-        &self.rev_edges[self.rev_limits[u]..self.rev_limits[u + 1]]
-    }
-
-    /// Returns a mutable reference of a node potential
-    #[inline]
-    pub fn potential_mut(&mut self, u: Node) -> &mut W {
-        &mut self.potentials[u]
-    }
-
-    /// Returns the potential weight of an edge `(u,v,w)`, i.e. `w - p[u] + p[v]`
-    #[inline]
-    pub fn potential_weight(&self, edge: Edge<W>) -> W {
-        edge.weight + self.potentials[edge.target] - self.potentials[edge.source]
-    }
-
-    /// Returns a uniform random edge from the graph and its index in `edges`
-    #[inline]
-    pub fn random_edge(&self, rng: &mut impl Rng) -> (usize, Edge<W>) {
-        let idx = rng.gen_range(0..self.m());
-        (idx, self.edges[idx])
-    }
-
-    /// Updates the weight of the edge at index `idx` in `edges`
-    ///
-    /// TODO: find better update method
-    #[inline]
-    pub fn update_weight(&mut self, idx: usize, old_weight: W, new_weight: W) {
-        self.edges[idx].weight = new_weight;
-
-        let (u, v, _) = self.edges[idx].into();
-        for i in self.rev_limits[v]..self.rev_limits[v + 1] {
-            if self.rev_edges[i].source == u && self.rev_edges[i].weight == old_weight {
-                self.rev_edges[i].weight = new_weight;
-                break;
-            }
-        }
-    }
-
-    /// Gets the weight of edge at index `idx`
-    #[inline]
-    pub fn weight(&self, idx: usize) -> W {
-        self.edges[idx].weight
-    }
-
-    /// Creates a graph using an edge list and the number of nodes. Since we need `edges` to be
-    /// sorted, we can specify whether it already is to skip another sort
-    pub fn from_edge_list(n: usize, mut edges: Vec<Edge<W>>) -> Self {
-        assert!(edges.len() > 1);
-
-        edges.sort_unstable();
-
-        let mut curr_edge: usize = 0;
-        let limits: Vec<usize> = (0..n)
-            .map(|i| {
-                while curr_edge < edges.len() && edges[curr_edge].source < i {
-                    curr_edge += 1;
-                }
-                curr_edge
-            })
-            .chain(std::iter::once(edges.len()))
-            .collect();
-
-        let (rev_edges, rev_limits) = {
-            let mut rev_edges = edges.clone();
-            rev_edges
-                .sort_unstable_by(|e1, e2| (e1.target, e1.source).cmp(&(e2.target, e2.source)));
-
-            curr_edge = 0;
-            let rev_limits: Vec<usize> = (0..n)
-                .map(|i| {
-                    while curr_edge < rev_edges.len() && rev_edges[curr_edge].target < i {
-                        curr_edge += 1;
-                    }
-                    curr_edge
-                })
-                .chain(std::iter::once(rev_edges.len()))
-                .collect();
-
-            (rev_edges, rev_limits)
-        };
-
-        // TODO: If graph with negative edges is provided, run BF to generate potentials instead
-        Self {
-            edges,
-            limits,
-            potentials: vec![W::zero(); n],
-            rev_edges,
-            rev_limits,
-        }
-    }
-
-    /// Check whether the given potentials are feasible, i.e. the graph has no negative cycle#
-    ///
-    /// Note that this method is subsceptible to floating-point-errors
-    #[inline]
-    pub fn is_feasible(&self) -> bool {
-        self.edges
+    fn is_feasible(&self) -> bool {
+        self.edges()
             .iter()
             .all(|e| self.potential_weight(*e) >= W::zero())
     }
 
-    /// Creates the graph according to the specified source
+    /// Returns the average weight in the graph
     #[inline]
-    pub fn from_source(source: &Source, rng: &mut impl Rng, default_weight: W) -> Self {
+    fn avg_weight(&self) -> f64 {
+        self.edges().iter().map(|e| e.weight).sum::<W>().to_f64() / self.m() as f64
+    }
+
+    /// Returns the fraction of negative edges in the graph
+    #[inline]
+    fn frac_negative_edges(&self) -> f64 {
+        self.edges().iter().filter(|e| e.weight < W::zero()).count() as f64 / self.m() as f64
+    }
+
+    /// Write the graph into an output
+    #[inline]
+    fn store_graph<WB: Write>(&self, writer: &mut WB) -> std::io::Result<()> {
+        for edge in self.edges() {
+            writeln!(writer, "{},{},{}", edge.source, edge.target, edge.weight)?
+        }
+        Ok(())
+    }
+
+    /// Creates the graph from a given number of nodes and a list of edges
+    fn from_edges(n: usize, edges: Vec<Edge<W>>) -> Self;
+
+    /// Creates the graph from a given `Source`
+    #[inline]
+    fn from_source(source: &Source, rng: &mut impl Rng, default_weight: W) -> Self {
         let (n, edges) = match *source {
             Source::Gnp { nodes, avg_deg } => {
                 assert!(nodes > 1 && avg_deg > 0.0);
@@ -253,50 +186,36 @@ impl<W: Weight> Graph<W> {
             Source::Cycle { nodes } => (nodes, Cycle::new(nodes).generate(rng, default_weight)),
         };
 
-        Graph::from_edge_list(n, edges)
-    }
-
-    /// Returns the average weight in the graph
-    #[inline]
-    pub fn avg_weight(&self) -> f64 {
-        self.edges.iter().map(|e| e.weight).sum::<W>().to_f64() / self.m() as f64
-    }
-
-    /// Returns the fraction of negative edges in the graph
-    #[inline]
-    pub fn frac_negative_edges(&self) -> f64 {
-        self.edges.iter().filter(|e| e.weight < W::zero()).count() as f64 / self.m() as f64
-    }
-
-    /// Write the graph into an output
-    #[inline]
-    pub fn store_graph<WB: Write>(&self, writer: &mut WB) -> std::io::Result<()> {
-        for edge in &self.edges {
-            writeln!(writer, "{},{},{}", edge.source, edge.target, edge.weight)?
-        }
-        Ok(())
+        Self::from_edges(n, edges)
     }
 }
 
-impl<W: Weight> Debug for Graph<W> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "\n<== Graph with {} nodes and {} edges ==>\n\nEdge = (source, target, weight, potential weight)", self.n(), self.m())?;
-        for u in 0..self.n() {
-            write!(f, "Outgoing edges from {u} => ")?;
-            for edge in self.neighbors(u) {
-                write!(
-                    f,
-                    "  ({u}, {}, {}, {})",
-                    edge.target,
-                    edge.weight,
-                    self.potential_weight(*edge)
-                )?;
+macro_rules! impl_debug_graph {
+    ($id:ident) => {
+        impl<W: Weight> Debug for $id<W> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                writeln!(f, "\n<== Graph with {} nodes and {} edges ==>\n\nEdge = (source, target, weight, potential weight)", self.n(), self.m())?;
+                for u in 0..self.n() {
+                    write!(f, "Outgoing edges from {u} => ")?;
+                    for edge in self.out_neighbors(u) {
+                        write!(
+                            f,
+                            "  ({u}, {}, {}, {})",
+                            edge.target,
+                            edge.weight,
+                            self.potential_weight(*edge)
+                        )?;
+                    }
+                    writeln!(f)?;
+                }
+                Ok(())
             }
-            writeln!(f)?;
         }
-        Ok(())
-    }
+    };
 }
+
+impl_debug_graph!(OneDirGraph);
+impl_debug_graph!(TwoDirGraph);
 
 #[cfg(test)]
 pub(crate) mod test_graph_data {

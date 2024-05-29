@@ -11,19 +11,22 @@ use crate::{graph::*, weight::Weight};
 /// Returns `Some(distances)` where distances is the distance vector of every node or `None` if a
 /// negative cycle exists
 #[inline]
-pub fn bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Node) -> Option<Vec<W>> {
+pub fn bellman_ford<W: Weight, G: Graph<W>>(graph: &G, source_node: Node) -> Option<Vec<W>> {
     inner_bellman_ford(graph, Some(source_node))
 }
 
 /// Returns *true* if the graph has a negative weight cycle
 #[inline]
-pub fn has_negative_cycle<W: Weight>(graph: &Graph<W>) -> bool {
+pub fn has_negative_cycle<W: Weight, G: Graph<W>>(graph: &G) -> bool {
     inner_bellman_ford(graph, None).is_none()
 }
 
 /// Implementation of the SPFA heuristic with cycle-checks every `n` relaxations  
 /// If `source_node` is `None`, run from all nodes in graph
-fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) -> Option<Vec<W>> {
+fn inner_bellman_ford<W: Weight, G: Graph<W>>(
+    graph: &G,
+    source_node: Option<Node>,
+) -> Option<Vec<W>> {
     // A value of `n` means: no predecessor set yet
     let mut predecessors: Vec<Node> = vec![graph.n() as Node; graph.n()];
 
@@ -50,7 +53,7 @@ fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) ->
     while let Some(u) = queue.pop_front() {
         in_queue.unset_bit(u);
 
-        for edge in graph.neighbors(u) {
+        for edge in graph.out_neighbors(u) {
             if distances[u] + edge.weight < distances[edge.target] {
                 distances[edge.target] = distances[u] + edge.weight;
                 predecessors[edge.target] = u;
@@ -73,7 +76,7 @@ fn inner_bellman_ford<W: Weight>(graph: &Graph<W>, source_node: Option<Node>) ->
 }
 
 // Check if the shortest path tree is acyclic via TopoSearch
-fn shortest_path_tree_is_acyclic<W: Weight>(graph: &Graph<W>, predecessors: &[Node]) -> bool {
+fn shortest_path_tree_is_acyclic<W: Weight, G: Graph<W>>(graph: &G, predecessors: &[Node]) -> bool {
     let mut unused_nodes = BitSet::new_all_set(graph.n());
     let mut successors: Vec<Vec<Node>> = vec![Vec::new(); graph.n()];
     let mut stack: Vec<Node> = predecessors
@@ -108,18 +111,18 @@ mod tests {
 
     #[test]
     fn test_negative_cycle_finder() {
-        let mut graph = Graph::from_edge_list(5, EDGES.into_iter().map(|e| e.into()).collect());
+        let mut graph = OneDirGraph::from_edges(5, EDGES.into_iter().map(|e| e.into()).collect());
 
         for weights in GOOD_WEIGHTS {
             for i in 0..EDGES.len() {
-                graph.update_weight(i, 0.0, weights[i]);
+                graph.update_weight(i, weights[i]);
             }
             assert!(!has_negative_cycle(&graph));
         }
 
         for weights in BAD_WEIGHTS {
             for i in 0..EDGES.len() {
-                graph.update_weight(i, 0.0, weights[i]);
+                graph.update_weight(i, weights[i]);
             }
             assert!(has_negative_cycle(&graph));
         }
@@ -127,11 +130,11 @@ mod tests {
 
     #[test]
     fn test_bellman_ford() {
-        let mut graph = Graph::from_edge_list(5, EDGES.into_iter().map(|e| e.into()).collect());
+        let mut graph = OneDirGraph::from_edges(5, EDGES.into_iter().map(|e| e.into()).collect());
 
         for i in 0..GOOD_WEIGHTS.len() {
             for j in 0..EDGES.len() {
-                graph.update_weight(j, 0.0, GOOD_WEIGHTS[i][j]);
+                graph.update_weight(j, GOOD_WEIGHTS[i][j]);
             }
             let res: Vec<Vec<f64>> = DISTANCES[i].into_iter().map(|s| s.to_vec()).collect();
 
