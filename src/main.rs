@@ -92,6 +92,10 @@ enum Source {
         #[structopt(short = "g")]
         gamma: Option<f64>,
 
+        /// Average degree
+        #[structopt(short = "d")]
+        avg_deg: Option<f64>,
+
         /// Bias for choosing nodes from out-degree distrbution
         #[structopt(long = "do", default_value = "1")]
         delta_out: f64,

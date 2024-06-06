@@ -138,29 +138,11 @@ pub trait Graph<W: Weight>: Sized {
                 alpha,
                 beta,
                 gamma,
+                avg_deg,
                 delta_out,
                 delta_in,
             } => {
-                let (alpha, beta) = if let Some(a) = alpha {
-                    if let Some(b) = beta {
-                        (a, b)
-                    } else if let Some(g) = gamma {
-                        (a, 1.0 - a - g)
-                    } else {
-                        (a, (1.0 - a) / 2.0)
-                    }
-                } else if let Some(b) = beta {
-                    if let Some(g) = gamma {
-                        (1.0 - b - g, b)
-                    } else {
-                        ((1.0 - b) / 2.0, b)
-                    }
-                } else if let Some(g) = gamma {
-                    let t = (1.0 - g) / 2.0;
-                    (t, t)
-                } else {
-                    (1.0 / 3.0, 1.0 / 3.0)
-                };
+                let (alpha, beta) = compute_dsf_params(alpha, beta, gamma, avg_deg);
 
                 (
                     nodes,

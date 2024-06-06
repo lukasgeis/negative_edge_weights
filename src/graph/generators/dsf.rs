@@ -123,3 +123,45 @@ impl<W: Weight> GraphGenerator<W> for DirectedScaleFree {
         edges
     }
 }
+
+/// Compute `alpha` and `beta` according to given alpha,beta,gamma and average degree
+#[inline]
+pub fn compute_dsf_params(
+    alpha: Option<f64>,
+    beta: Option<f64>,
+    gamma: Option<f64>,
+    avg_deg: Option<f64>,
+) -> (f64, f64) {
+    let (alpha, beta) = if let Some(d) = avg_deg {
+        let b = (d as f64 - 1.0) / d as f64;
+        match (alpha, gamma) {
+            (Some(a), _) => (a, b),
+            (_, Some(g)) => (two(b, g), b),
+            (_, _) => (one(b), b),
+        }
+    } else {
+        match (alpha, beta, gamma) {
+            (Some(a), Some(b), _) => (a, b),
+            (Some(a), _, Some(g)) => (a, two(a, g)),
+            (Some(a), _, _) => (a, one(a)),
+            (_, Some(b), Some(g)) => (two(b, g), b),
+            (_, Some(b), _) => (one(b), b),
+            (_, _, Some(g)) => (one(g), one(g)),
+            (_, _, _) => (1.0 / 3.0, 1.0 / 3.0),
+        }
+    };
+
+    assert!(alpha >= 0.0 && beta >= 0.0 && alpha + beta <= 1.0);
+
+    (alpha, beta)
+}
+
+#[inline]
+fn one(p: f64) -> f64 {
+    (1.0 - p) / 2.0
+}
+
+#[inline]
+fn two(p1: f64, p2: f64) -> f64 {
+    1.0 - p1 - p2
+}
