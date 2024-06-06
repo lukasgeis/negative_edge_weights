@@ -56,7 +56,7 @@ impl<W: Weight> Graph<W> for OneDirGraph<W> {
     impl_common_graph_fn!();
 
     #[cold]
-    fn in_neighbors(&self, u: Node) -> &[Edge<W>] {
+    fn in_neighbors(&self, _: Node) -> &[Edge<W>] {
         panic!("This graph representation does not implement this method!");
     }
 

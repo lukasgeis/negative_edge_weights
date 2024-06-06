@@ -91,7 +91,8 @@ pub trait Graph<W: Weight>: Sized {
     /// Returns a slice over all edges
     fn edges(&self) -> &[Edge<W>];
 
-    /// Returns *true* if the graph is feasible, i.e. if all potential non-negativee
+    /// Returns *true* if the graph is feasible, i.e. if all potential non-negative
+    #[allow(unused)]
     #[inline]
     fn is_feasible(&self) -> bool {
         self.edges()

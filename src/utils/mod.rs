@@ -68,6 +68,7 @@ impl<T: Default + Clone> ReusableVec<T> {
     }
 
     /// Returns the length of the vector
+    #[allow(unused)]
     #[inline]
     pub fn len(&self) -> usize {
         self.len

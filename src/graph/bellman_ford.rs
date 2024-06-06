@@ -10,6 +10,7 @@ use crate::{graph::*, weight::Weight};
 ///
 /// Returns `Some(distances)` where distances is the distance vector of every node or `None` if a
 /// negative cycle exists
+#[allow(unused)]
 #[inline]
 pub fn bellman_ford<W: Weight, G: Graph<W>>(graph: &G, source_node: Node) -> Option<Vec<W>> {
     inner_bellman_ford(graph, Some(source_node))
