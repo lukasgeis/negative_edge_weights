@@ -12,36 +12,14 @@ dsf["gen"] = "dsf"
 
 data = pd.concat([gnp, rhg, dsf])
 
-data_labels = [
-    (
-        "avg",
-        r"\textsc{Average}" "\n" r"\textsc{Weight}"
-    ),
-    (
-        "frac",
-        r"\textsc{Fraction of}" "\n" r"\textsc{Negative Edges}"
-    ),
-    (
-        "time",
-        r"\textsc{Time per}" "\n" r"$10000$ \textsc{Rounds}" "\n" r"\textsc{\small in} $ns$"
-    )
-]
-
 sns.set_theme(style="darkgrid")
 plt.rcParams["text.usetex"] = True
 plt.rcParams["figure.figsize"] = 10, 10
 
-fig, ax = plt.subplots(3, 1)
+fig, ax = plt.subplots(4, 1)
 
-for i in range(3):
-    plot = sns.lineplot(
-        ax=ax[i],
-        data=data,
-        x="round",
-        y=data_labels[i][0],
-        hue="gen",
-    )
 
+def correct_labels(plot):
     plot.set(xlabel=None)
     plot.set(ylabel=None)
     plot.get_legend().set_title(r"\textsc{Generator}")
@@ -49,9 +27,79 @@ for i in range(3):
     plot.get_legend().get_texts()[1].set_text(r"\textsc{Rhg}")
     plot.get_legend().get_texts()[2].set_text(r"\textsc{Dsf}")
 
-    ax[i].set_ylabel(data_labels[i][1])
 
-ax[2].set_xlabel(r"\textsc{Number of} $10000$ \textsc{Rounds}")
+# Average Weight
+plot = sns.lineplot(
+    ax=ax[0],
+    data=data,
+    x="round",
+    y="avg",
+    hue="gen",
+)
+correct_labels(plot)
+
+# Fraction Negative Edges
+plot = sns.lineplot(
+    ax=ax[1],
+    data=data,
+    x="round",
+    y="frac",
+    hue="gen",
+)
+correct_labels(plot)
+
+# Runtime Dikjstra
+plot = sns.lineplot(
+    ax=ax[2],
+    data=data[data.algo == "onedir"],
+    x="round",
+    y="time",
+    hue="gen",
+)
+correct_labels(plot)
+
+# Runtime BiDikjstra
+plot = sns.lineplot(
+    ax=ax[3],
+    data=data[data.algo == "twodir"],
+    x="round",
+    y="time",
+    hue="gen",
+)
+correct_labels(plot)
+
+
+ax[3].set_xlabel(r"\textsc{Number of} $10000$ \textsc{Rounds}")
+
+ax[0].set_ylabel(
+    r"\textsc{Average}"
+    "\n"
+    r"\textsc{Weight}"
+)
+ax[1].set_ylabel(
+    r"\textsc{Fraction of}"
+    "\n"
+    r"\textsc{Negative Edges}"
+)
+ax[2].set_ylabel(
+    r"\textsc{Dikjstra}"
+    "\n"
+    r"\textsc{Time per}"
+    "\n"
+    r"$10000$ \textsc{Rounds}"
+    "\n"
+    r"\textsc{\small in} $ms$"
+)
+ax[3].set_ylabel(
+    r"\textsc{BiDikjstra}"
+    "\n"
+    r"\textsc{Time per}"
+    "\n"
+    r"$10000$ \textsc{Rounds}"
+    "\n"
+    r"\textsc{\small in} $ms$"
+)
+
 
 fig.suptitle(
     "Average Weight / Fraction of Negative Edges / Runtime" "\n"

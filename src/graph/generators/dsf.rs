@@ -133,7 +133,7 @@ pub fn compute_dsf_params(
     avg_deg: Option<f64>,
 ) -> (f64, f64) {
     let (alpha, beta) = if let Some(d) = avg_deg {
-        let b = (d as f64 - 1.0) / d as f64;
+        let b = (d- 1.0) / d;
         match (alpha, gamma) {
             (Some(a), _) => (a, b),
             (_, Some(g)) => (two(b, g), b),

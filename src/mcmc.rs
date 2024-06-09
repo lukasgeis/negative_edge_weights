@@ -108,7 +108,28 @@ where
     );
     let edge_sampler = Uniform::new(0usize, graph.m());
 
+    #[cfg(feature = "intervals")]
+    let mut round = 0usize;
+
+    #[cfg(feature = "intervals")]
+    let mut timer = Instant::now();
+
     for _ in 0..num_rounds {
+        #[cfg(feature = "intervals")]
+        {
+            round += 1;
+            if round % 10000 == 0 {
+                println!(
+                    "{},{},{},{},onedir",
+                    round / 10000,
+                    graph.avg_weight(),
+                    graph.frac_negative_edges(),
+                    timer.elapsed().as_millis()
+                );
+                timer = Instant::now();
+            }
+        }
+
         let idx = edge_sampler.sample(rng);
         let edge = graph.edge(idx);
         let weight = weight_sampler.sample(rng);
@@ -178,11 +199,11 @@ where
             round += 1;
             if round % 10000 == 0 {
                 println!(
-                    "{},{},{},{}",
+                    "{},{},{},{},twodir",
                     round / 10000,
                     graph.avg_weight(),
                     graph.frac_negative_edges(),
-                    timer.elapsed().as_nanos()
+                    timer.elapsed().as_millis()
                 );
                 timer = Instant::now();
             }
