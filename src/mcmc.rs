@@ -8,6 +8,7 @@ use rand_pcg::Pcg64;
 
 use crate::bidijkstra::Graph as Graph2;
 use crate::dijkstra::Graph as Graph1;
+use crate::graph::bellman_ford::{has_negative_cycle, Graph as Graph3};
 use crate::weight::Weight;
 use crate::{graph::*, Algorithm, Parameters};
 
@@ -36,7 +37,7 @@ where
     match params.algorithm {
         Algorithm::Dijkstra => run_with_graph::<W, Graph1<W>>(params),
         Algorithm::BiDijkstra => run_with_graph::<W, Graph2<W>>(params),
-        Algorithm::BellmanFord => (),
+        Algorithm::BellmanFord => run_with_graph::<W, Graph3<W>>(params),
     };
 }
 
@@ -94,7 +95,6 @@ where
             "[TEST] Resulting Graph has negative weight cycle"
         );
 
-        #[cfg(not(feature = "no_print"))]
         println!(
             "[TEST] No negative cycle found in resulting graph in {}ms",
             timer.elapsed().as_millis()

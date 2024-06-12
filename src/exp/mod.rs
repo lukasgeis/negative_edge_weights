@@ -15,7 +15,7 @@ use crate::{
     Parameters,
 };
 
-use self::{bidijkstra::BiDijkstra, dijkstra::Dijkstra};
+use self::{bellman_ford::BellmanFord, bidijkstra::BiDijkstra, dijkstra::Dijkstra};
 
 pub mod bidijkstra;
 pub mod dijkstra;
@@ -41,6 +41,8 @@ where
             W::from_f64(params.max_weight),
         );
         let edge_sampler = Uniform::new(0usize, self.m());
+
+        let mut bf_tester = BellmanFord::new(self.n());
 
         #[cfg(feature = "intervals")]
         let mut round = 0usize;
@@ -74,7 +76,7 @@ where
 
                 if params.bftest {
                     assert!(
-                        !has_negative_cycle(self),
+                        bf_tester.run(self, edge.target, edge.source, -weight),
                         "[FAIL] BF found a negative weight cycle when Dijkstra accepted directly"
                     );
                 }
@@ -91,17 +93,15 @@ where
 
                 if params.bftest {
                     assert!(
-                        !has_negative_cycle(self),
+                        bf_tester.run(self, edge.target, edge.source, -weight),
                         "[FAIL] BF found a negative weight cycle when Dijkstra accepted"
                     );
                 }
             } else if params.bftest {
-                self.update_weight(idx, weight);
                 assert!(
-                    has_negative_cycle(self),
+                    !bf_tester.run(self, edge.target, edge.source, -weight),
                     "[FAIL] BF found no negative weight cycle when Dijkstra rejected"
                 );
-                self.update_weight(idx, edge.weight);
             }
         }
     }
@@ -120,6 +120,8 @@ where
             W::from_f64(params.max_weight),
         );
         let edge_sampler = Uniform::new(0usize, self.m());
+
+        let mut bf_tester = BellmanFord::new(self.n());
 
         #[cfg(feature = "intervals")]
         let mut round = 0usize;
@@ -153,7 +155,7 @@ where
 
                 if params.bftest {
                     assert!(
-                        !has_negative_cycle(self),
+                        bf_tester.run(self, edge.target, edge.source, -weight),
                         "[FAIL] BF found a negative weight cycle when BiDijkstra accepted directly"
                     );
                 }
@@ -174,17 +176,15 @@ where
 
                 if params.bftest {
                     assert!(
-                        !has_negative_cycle(self),
+                        bf_tester.run(self, edge.target, edge.source, -weight),
                         "[FAIL] BF found a negative weight cycle when BiDijkstra accepted"
                     );
                 }
             } else if params.bftest {
-                self.update_weight(idx, weight);
                 assert!(
-                    has_negative_cycle(self),
+                    !bf_tester.run(self, edge.target, edge.source, -weight),
                     "[FAIL] BF found no negative weight cycle when BiDijkstra rejected"
                 );
-                self.update_weight(idx, edge.weight);
             }
         }
     }

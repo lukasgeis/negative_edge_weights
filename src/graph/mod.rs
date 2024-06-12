@@ -4,10 +4,9 @@ use rand::Rng;
 
 use crate::{weight::Weight, Source};
 
-mod bellman_ford;
+pub mod bellman_ford;
 mod generators;
 
-pub use bellman_ford::*;
 pub use generators::*;
 
 /// Node of a graph
