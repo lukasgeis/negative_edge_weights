@@ -3,23 +3,25 @@
 #![feature(generic_const_items)]
 #![feature(float_next_up_down)]
 
-use std::{fs::File, io::BufWriter, path::PathBuf, time::Instant};
+use std::path::PathBuf;
 
-use bidirectional::BiDijkstra;
-use dijkstra::Dijkstra;
-use graph::*;
-use rand::{Rng, SeedableRng};
-use rand_distr::{Distribution, Uniform};
-use rand_pcg::Pcg64;
+use graph::Node;
 use structopt::StructOpt;
 
 #[cfg(test)]
 pub(crate) use graph::test_graph_data as test_data;
-use mcmc::*;
-use weight::{Weight, WeightType};
+use weight::WeightType;
 
-mod bidirectional;
+#[cfg(not(feature = "exp"))]
+use crate::mcmc::run;
+
+#[cfg(feature = "exp")]
+use crate::exp::run;
+
+mod bidijkstra;
 mod dijkstra;
+#[cfg(feature = "exp")]
+mod exp;
 mod graph;
 mod mcmc;
 mod utils;
@@ -27,15 +29,19 @@ mod weight;
 
 #[derive(StructOpt, Debug, Clone)]
 struct Parameters {
+    /// Source for the graph, i.e. which generator or from file
     #[structopt(subcommand)]
     source: Source,
 
+    /// Minimum weight for an edge
     #[structopt(short = "w", default_value = "-1")]
     min_weight: f64,
 
+    /// Maximum weight for an edge
     #[structopt(short = "W", default_value = "1")]
     max_weight: f64,
 
+    /// Primitive Type used as Weight
     #[structopt(short = "t", default_value = "f64")]
     weight_type: WeightType,
 
@@ -56,6 +62,7 @@ struct Parameters {
     check: bool,
 
     /// Cross-Reference decisions with a naive BF check
+    #[cfg(feature = "exp")]
     #[structopt(long)]
     bftest: bool,
 
@@ -158,44 +165,4 @@ fn main() {
         WeightType::I32 => run::<i32>(params),
         WeightType::I64 => run::<i64>(params),
     };
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn dijkstra_vs_bf() {
-        let mut rng = Pcg64::from_entropy();
-
-        for (a, b) in [(-1.0, 1.0), (-2.0, 5.0), (-3.0, 10.0)] {
-            let params = Parameters {
-                source: Source::Gnp {
-                    nodes: 100,
-                    avg_deg: 5.0,
-                },
-                min_weight: a,
-                max_weight: b,
-                weight_type: WeightType::F64,
-                rounds_per_edge: 5.0,
-                seed: None,
-                output: None,
-                check: true,
-                bftest: true,
-                bidir: true,
-            };
-
-            let default_weight = i64::from_f64(params.max_weight);
-            let mut graph: TwoDirGraph<i64> =
-                TwoDirGraph::from_source(&params.source, &mut rng, default_weight);
-            run_mcmc(&mut rng, &mut graph, &params);
-            run_mcmc_bidirectional(&mut rng, &mut graph, &params);
-
-            let default_weight = f64::from_f64(params.max_weight);
-            let mut graph: TwoDirGraph<f64> =
-                TwoDirGraph::from_source(&params.source, &mut rng, default_weight);
-            run_mcmc(&mut rng, &mut graph, &params);
-            run_mcmc_bidirectional(&mut rng, &mut graph, &params)
-        }
-    }
 }

@@ -4,7 +4,6 @@ use std::{
     vec,
 };
 
-use rand::Rng;
 use rand_distr::Uniform;
 
 #[derive(Debug, Clone, Copy)]
@@ -266,28 +265,22 @@ fn generate_threshold_rhg<W: Weight>(
                 };
             }
             (v.bid..band_limits.len() - 1).for_each(|bid| {
-                // Computing every node within the outer rectangle, which is potentially near enough of v.
                 let slab = &coords[band_bounds[bid]..band_bounds[bid + 1]];
                 let nodes_to_test;
-                let rhs = rhs_safe; // reuse the old inner rectangle
+                let rhs = rhs_safe;
                 if rhs.is_nan() {
                     nodes_to_test = slab.iter().chain(&[]);
                 } else {
                     let min = min_safe;
                     let max = max_safe;
-                    //let start = slab.partition_point(|&c| c.phi < min);  // Why on earth is this 100× slower than `binary_search_partition`?
-                    //let end = slab.partition_point(|&c| c.phi > max);  // (Attention: These numbers may be slightly off.)
                     let start = binary_search_partition(min, slab);
                     let end = binary_search_partition(max, slab) + 1;
                     if start < end {
-                        // rectangle between the endpoints of the array
                         nodes_to_test = slab[start..end].iter().chain(&[]);
                     } else {
-                        // Either the rectangle goes over the endpoints of the array and must be divided into two arrays or there is no rectangle at all.
                         nodes_to_test = slab[..end].iter().chain(&slab[start..]);
                     }
                 }
-                // Calculating the boundaries of the inner rectangle.
                 rhs_safe = ((v.rad_cosh * band_cosh[bid + 1] - radius_cosh)
                     / (v.rad_sinh * band_sinh[bid + 1]))
                     .acos();
@@ -306,7 +299,6 @@ fn generate_threshold_rhg<W: Weight>(
                         v.phi + rhs_safe - TAU
                     };
                 }
-                // Actually testing the nodes of the outer rectangle.
                 nodes_to_test.for_each(|w| {
                     if bid > v.bid || v.id < w.id {
                         let within_inner = if min_safe <= max_safe {

@@ -13,8 +13,8 @@ rand_pcg = "0.3.1"
 structopt = "0.3.26"
 
 [features]
-default = []                # Set default features  
-no_print = []               # Do not print standard outputs - this feature should be used as a sub-feature
-dfs_size = ["no_print"]     # Log the number of traversed zero edges in Dijkstra 
-sptree_size = ["no_print"]  # Log the size of the shortest path trees in Dijkstra or BiDijkstra
-intervals = ["no_print"]    # Every 10000 rounds of the MCMC, log time taken, average weight, fraction of negative edges
+default = []            # Set default features  
+exp = []                # When this flag is enabled, we do an experiment
+dfs_size = ["exp"]      # Log the number of traversed zero edges in Dijkstra 
+sptree_size = ["exp"]   # Log the size of the shortest path trees in Dijkstra or BiDijkstra
+intervals = ["exp"]     # Every 10000 rounds of the MCMC, log time taken, average weight, fraction of negative edges

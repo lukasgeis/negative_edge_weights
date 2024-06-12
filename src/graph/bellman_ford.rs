@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use ez_bitset::bitset::BitSet;
 
-use crate::{graph::*, weight::Weight};
+use crate::graph::*;
 
 /// Runs BF on the given graph and starting node
 ///
@@ -12,19 +12,22 @@ use crate::{graph::*, weight::Weight};
 /// negative cycle exists
 #[allow(unused)]
 #[inline]
-pub fn bellman_ford<W: Weight, G: Graph<W>>(graph: &G, source_node: Node) -> Option<Vec<W>> {
+pub fn bellman_ford<W: Weight, G: GraphNeigbors<W> + GraphStats>(
+    graph: &G,
+    source_node: Node,
+) -> Option<Vec<W>> {
     inner_bellman_ford(graph, Some(source_node))
 }
 
 /// Returns *true* if the graph has a negative weight cycle
 #[inline]
-pub fn has_negative_cycle<W: Weight, G: Graph<W>>(graph: &G) -> bool {
+pub fn has_negative_cycle<W: Weight, G: GraphNeigbors<W> + GraphStats>(graph: &G) -> bool {
     inner_bellman_ford(graph, None).is_none()
 }
 
 /// Implementation of the SPFA heuristic with cycle-checks every `n` relaxations  
 /// If `source_node` is `None`, run from all nodes in graph
-fn inner_bellman_ford<W: Weight, G: Graph<W>>(
+fn inner_bellman_ford<W: Weight, G: GraphNeigbors<W> + GraphStats>(
     graph: &G,
     source_node: Option<Node>,
 ) -> Option<Vec<W>> {
@@ -77,7 +80,10 @@ fn inner_bellman_ford<W: Weight, G: Graph<W>>(
 }
 
 // Check if the shortest path tree is acyclic via TopoSearch
-fn shortest_path_tree_is_acyclic<W: Weight, G: Graph<W>>(graph: &G, predecessors: &[Node]) -> bool {
+fn shortest_path_tree_is_acyclic<W: Weight, G: GraphNeigbors<W> + GraphStats>(
+    graph: &G,
+    predecessors: &[Node],
+) -> bool {
     let mut unused_nodes = BitSet::new_all_set(graph.n());
     let mut successors: Vec<Vec<Node>> = vec![Vec::new(); graph.n()];
     let mut stack: Vec<Node> = predecessors

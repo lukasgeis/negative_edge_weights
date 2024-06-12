@@ -1,80 +1,6 @@
-use crate::{graph::*, utils::*, weight::Weight};
-
-/// The states and visited distances of all nodes
-#[derive(Debug, Clone)]
-struct VisitedDistances<W: Weight> {
-    /// Stores the tentative distance for each node in this iteration
-    visit_map: Vec<W>,
-    /// Stores which nodes were reached in this iteration: only beneficial if we have `o(n)` nodes
-    /// seen in total
-    seen_nodes: ReusableVec<Node>,
-}
-
-impl<W: Weight> VisitedDistances<W> {
-    #[inline]
-    pub fn new(n: usize) -> Self {
-        Self {
-            visit_map: vec![W::MAX; n],
-            seen_nodes: ReusableVec::with_capacity(n),
-        }
-    }
-
-    /// Returns *true* if the node is already visisted, i.e. if there is a shorter path to the node
-    #[inline]
-    pub fn is_visited(&self, node: Node, dist: W) -> bool {
-        self.visit_map[node] < dist
-    }
-
-    /// Updates the distance of a node
-    #[inline]
-    pub fn queue_node(&mut self, node: Node, distance: W) -> bool {
-        if distance < self.visit_map[node] {
-            if self.visit_map[node] == W::MAX {
-                self.seen_nodes.push(node);
-            }
-            self.visit_map[node] = distance;
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Resets the data structure
-    #[inline]
-    pub fn reset(&mut self) {
-        if self.seen_nodes.is_asymptotically_full() {
-            self.seen_nodes.clear();
-            self.visit_map.iter_mut().for_each(|w| *w = W::MAX);
-        } else {
-            self.seen_nodes
-                .iter()
-                .for_each(|u| self.visit_map[*u] = W::MAX);
-            self.seen_nodes.clear();
-        }
-    }
-
-    /// Returns an iterator over all discovered nodes in the shortest path tree and their total distances  
-    #[inline]
-    pub fn get_distances(&mut self) -> impl Iterator<Item = (Node, W)> + '_ {
-        if self.seen_nodes.is_asymptotically_full() {
-            DoubleIterator::IterA(self.visit_map.iter().enumerate().filter_map(|(u, w)| {
-                if *w < W::MAX {
-                    Some((u, *w))
-                } else {
-                    None
-                }
-            }))
-        } else {
-            DoubleIterator::IterB(self.seen_nodes.iter().filter_map(|u| {
-                if self.visit_map[*u] < W::MAX {
-                    Some((*u, self.visit_map[*u]))
-                } else {
-                    None
-                }
-            }))
-        }
-    }
-}
+use crate::{
+    dijkstra::search::VisitedDistances, dijkstra::Graph, graph::*, utils::*, weight::Weight,
+};
 
 /// Dijkstra instance to reuse data structure for multiple runs
 /// Note that this is meant to be used on graphs with the same number of nodes only
@@ -115,9 +41,9 @@ where
     ///
     /// In case (1) return `Some(SP)` where `SP` is an iterator over the shortest path tree found
     /// by dijkstra. In case (2) return `None`.
-    pub fn run<G: Graph<W>>(
+    pub fn run(
         &mut self,
-        graph: &G,
+        graph: &Graph<W>,
         source_node: Node,
         target_node: Node,
         max_distance: W,
@@ -213,36 +139,5 @@ where
         println!("{nodes_visited},{nodes_queued},{edges_traversed},dijkstra,total");
 
         Some(self.visit_states.get_distances())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::test_data::*;
-
-    #[test]
-    fn test_dijkstra() {
-        let mut graph = OneDirGraph::from_edges(5, EDGES.into_iter().map(|e| e.into()).collect());
-
-        let mut dijsktra = Dijkstra::new(graph.n());
-
-        for j in 0..EDGES.len() {
-            graph.update_weight(j, GOOD_WEIGHTS[2][j]);
-        }
-        let res: Vec<Vec<f64>> = DISTANCES[2].into_iter().map(|s| s.to_vec()).collect();
-
-        let targets: [Node; 5] = [4, 2, 4, 2, 3];
-
-        for u in 0..graph.n() {
-            let mut dj = vec![0.0; graph.n()];
-            for (v, w) in dijsktra
-                .run(&graph, u, targets[u], res[u][targets[u]])
-                .unwrap()
-            {
-                dj[v] = w;
-            }
-            assert_eq!(res[u], dj);
-        }
     }
 }

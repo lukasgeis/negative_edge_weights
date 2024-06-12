@@ -6,11 +6,9 @@ use crate::{weight::Weight, Source};
 
 mod bellman_ford;
 mod generators;
-mod repr;
 
 pub use bellman_ford::*;
 pub use generators::*;
-pub use repr::*;
 
 /// Node of a graph
 pub type Node = usize;
@@ -57,76 +55,18 @@ impl<W: Weight> From<Edge<W>> for (Node, Node, W) {
     }
 }
 
-pub trait Graph<W: Weight>: Sized {
-    /// Gets the number of nodes
-    fn n(&self) -> usize;
-
-    /// Gets the number of edges
-    fn m(&self) -> usize;
-
-    /// Gets the potential of a node `u`
-    fn potential(&self, u: Node) -> W;
-
-    /// Gets the potential weight of an edge
-    #[inline]
-    fn potential_weight(&self, edge: Edge<W>) -> W {
-        edge.weight + self.potential(edge.target) - self.potential(edge.source)
-    }
-
-    /// Adds `delta` to `potential[u]`
-    fn update_potential(&mut self, u: Node, delta: W);
-
-    /// Gets the edge at index `idx`
-    fn edge(&self, idx: usize) -> Edge<W>;
-
-    /// Updates the weight of the edge at index `idx` from `old_weight` to `new_weight`
-    fn update_weight(&mut self, idx: usize, new_weight: W);
-
-    /// Returns a slice over all outgoing edges of `u`
-    fn out_neighbors(&self, u: Node) -> &[Edge<W>];
-
-    /// Returns a slive over all incoming edges of `u`
-    fn in_neighbors(&self, u: Node) -> &[Edge<W>];
-
-    /// Returns a slice over all edges
-    fn edges(&self) -> &[Edge<W>];
-
-    /// Returns *true* if the graph is feasible, i.e. if all potential non-negative
-    #[allow(unused)]
-    #[inline]
-    fn is_feasible(&self) -> bool {
-        self.edges()
-            .iter()
-            .all(|e| self.potential_weight(*e) >= W::zero())
-    }
-
-    /// Returns the average weight in the graph
-    #[inline]
-    fn avg_weight(&self) -> f64 {
-        self.edges().iter().map(|e| e.weight).sum::<W>().to_f64() / self.m() as f64
-    }
-
-    /// Returns the fraction of negative edges in the graph
-    #[inline]
-    fn frac_negative_edges(&self) -> f64 {
-        self.edges().iter().filter(|e| e.weight < W::zero()).count() as f64 / self.m() as f64
-    }
-
-    /// Write the graph into an output
-    #[inline]
-    fn store_graph<WB: Write>(&self, writer: &mut WB) -> std::io::Result<()> {
-        for edge in self.edges() {
-            writeln!(writer, "{},{},{}", edge.source, edge.target, edge.weight)?
-        }
-        Ok(())
-    }
-
-    /// Creates the graph from a given number of nodes and a list of edges
+pub trait GraphEdgeList<W: Weight> {
     fn from_edges(n: usize, edges: Vec<Edge<W>>) -> Self;
 
-    /// Creates the graph from a given `Source`
-    #[inline]
-    fn from_source(source: &Source, rng: &mut impl Rng, default_weight: W) -> Self {
+    fn into_edges(self) -> Vec<Edge<W>>;
+}
+
+pub trait GraphFromSource<W: Weight> {
+    fn from_source<R: Rng>(source: &Source, rng: &mut R, default_weight: W) -> Self;
+}
+
+impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
+    fn from_source<R: Rng>(source: &Source, rng: &mut R, default_weight: W) -> Self {
         let (n, edges) = match *source {
             Source::Gnp { nodes, avg_deg } => {
                 assert!(nodes > 1 && avg_deg > 0.0);
@@ -173,6 +113,32 @@ pub trait Graph<W: Weight>: Sized {
     }
 }
 
+/// Write the graph into an output
+#[inline]
+pub fn store_graph<W: Weight, G: GraphEdgeList<W>, WB: Write>(
+    graph: G,
+    writer: &mut WB,
+) -> std::io::Result<()> {
+    for edge in graph.into_edges() {
+        writeln!(writer, "{},{},{}", edge.source, edge.target, edge.weight)?
+    }
+    Ok(())
+}
+
+pub trait GraphStats {
+    fn n(&self) -> usize;
+
+    fn m(&self) -> usize;
+
+    fn avg_weight(&self) -> f64;
+
+    fn frac_negative_edges(&self) -> f64;
+}
+
+pub trait GraphNeigbors<W: Weight> {
+    fn out_neighbors(&self, u: Node) -> &[Edge<W>];
+}
+
 macro_rules! impl_debug_graph {
     ($id:ident) => {
         impl<W: Weight> Debug for $id<W> {
@@ -197,8 +163,7 @@ macro_rules! impl_debug_graph {
     };
 }
 
-impl_debug_graph!(OneDirGraph);
-impl_debug_graph!(TwoDirGraph);
+pub(crate) use impl_debug_graph;
 
 #[cfg(test)]
 pub(crate) mod test_graph_data {
