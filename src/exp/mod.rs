@@ -11,7 +11,8 @@ use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 
 use crate::{
-    bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, graph::*, weight::Weight, Parameters,
+    bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, graph::*, weight::Weight, Algorithm,
+    Parameters,
 };
 
 use self::{bidijkstra::BiDijkstra, dijkstra::Dijkstra};
@@ -195,15 +196,15 @@ where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
 {
-    if params.bidir {
-        run_with_graph::<W, Graph2<W>>(params);
-    } else {
-        run_with_graph::<W, Graph1<W>>(params);
-    }
+    match params.algorithm {
+        Algorithm::Dijkstra => run_with_graph::<W, Graph1<W>>(params),
+        Algorithm::BiDijkstra => run_with_graph::<W, Graph2<W>>(params),
+        Algorithm::BellmanFord => (),
+    };
 }
 
 #[inline]
-pub fn run_with_graph<W, G>(params: Parameters)
+fn run_with_graph<W, G>(params: Parameters)
 where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,

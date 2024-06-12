@@ -3,7 +3,7 @@
 #![feature(generic_const_items)]
 #![feature(float_next_up_down)]
 
-use std::path::PathBuf;
+use std::{convert::Infallible, path::PathBuf, str::FromStr};
 
 use graph::Node;
 use structopt::StructOpt;
@@ -67,8 +67,8 @@ struct Parameters {
     bftest: bool,
 
     /// Enable bidiretional search
-    #[structopt(long)]
-    bidir: bool,
+    #[structopt(short = "a", long, default_value = "bd")]
+    algorithm: Algorithm,
 }
 
 #[derive(StructOpt, Debug, Clone)]
@@ -165,4 +165,26 @@ fn main() {
         WeightType::I32 => run::<i32>(params),
         WeightType::I64 => run::<i64>(params),
     };
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Algorithm {
+    Dijkstra,
+    BiDijkstra,
+    BellmanFord,
+}
+
+impl FromStr for Algorithm {
+    // We should always use an algorithm - default to BiDijkstra
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with('d') {
+            Ok(Algorithm::Dijkstra)
+        } else if s.contains('f') {
+            Ok(Algorithm::BellmanFord)
+        } else {
+            Ok(Algorithm::BiDijkstra)
+        }
+    }
 }

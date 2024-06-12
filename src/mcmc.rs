@@ -9,7 +9,7 @@ use rand_pcg::Pcg64;
 use crate::bidijkstra::Graph as Graph2;
 use crate::dijkstra::Graph as Graph1;
 use crate::weight::Weight;
-use crate::{graph::*, Parameters};
+use crate::{graph::*, Algorithm, Parameters};
 
 /// The MCMC used for generating negative edge weights
 pub trait NegWeightMCMC<W>
@@ -33,11 +33,11 @@ where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
 {
-    if params.bidir {
-        run_with_graph::<W, Graph2<W>>(params);
-    } else {
-        run_with_graph::<W, Graph1<W>>(params);
-    }
+    match params.algorithm {
+        Algorithm::Dijkstra => run_with_graph::<W, Graph1<W>>(params),
+        Algorithm::BiDijkstra => run_with_graph::<W, Graph2<W>>(params),
+        Algorithm::BellmanFord => (),
+    };
 }
 
 /// Private specified helper for `run`
