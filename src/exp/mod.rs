@@ -3,7 +3,6 @@
 //! This module is a simple copy of the main code/version of the MCMC to allow for experiments
 //! using feature flags without making the original code unreadable
 
-#[cfg(feature = "intervals")]
 use std::time::Instant;
 
 use rand::{Rng, SeedableRng};
@@ -11,14 +10,15 @@ use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 
 use crate::{
-    bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, graph::*, weight::Weight, Algorithm,
+    graph::bellman_ford::Graph as Graph3, bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, graph::*, weight::Weight, Algorithm,
     Parameters,
 };
 
-use self::{bellman_ford::BellmanFord, bidijkstra::BiDijkstra, dijkstra::Dijkstra};
+use self::{bellmanford::BellmanFord, bidijkstra::BiDijkstra, dijkstra::Dijkstra};
 
 pub mod bidijkstra;
 pub mod dijkstra;
+pub mod bellmanford;
 
 pub trait ExpNegWeightMCMC<W>
 where
@@ -213,6 +213,32 @@ where
     }
 }
 
+impl<W> ExpNegWeightMCMC<W> for Graph3<W>
+where
+    W: Weight,
+    [(); W::NUM_BITS + 1]: Sized,
+{
+    fn run_exp_mcmc<R: Rng>(&mut self, rng: &mut R, params: &Parameters) {
+        let num_rounds = (self.m() as f64 * params.rounds_per_edge).ceil() as u64;
+        let mut bellman_ford = BellmanFord::new(self.n());
+        let weight_sampler = Uniform::new_inclusive(
+            W::from_f64(params.min_weight),
+            W::from_f64(params.max_weight),
+        );
+        let edge_sampler = Uniform::new(0, self.m());
+
+        for _ in 0..num_rounds {
+            let idx = edge_sampler.sample(rng);
+            let edge = self.edge(idx);
+            let weight = weight_sampler.sample(rng);
+
+            if weight >= edge.weight || bellman_ford.run(self, edge.target, edge.source, -weight) {
+                self.update_weight(idx, weight);
+            }
+        }
+    }
+}
+
 #[inline]
 pub fn run<W>(params: Parameters)
 where
@@ -228,7 +254,7 @@ where
     match params.algorithm {
         Algorithm::Dijkstra => run_with_graph::<W, Graph1<W>>(params),
         Algorithm::BiDijkstra => run_with_graph::<W, Graph2<W>>(params),
-        Algorithm::BellmanFord => (),
+        Algorithm::BellmanFord => run_with_graph::<W, Graph3<W>>(params),
     };
 }
 
