@@ -212,6 +212,8 @@ pub enum InitialWeights {
 }
 
 impl InitialWeights {
+    /// Generate a weight based on `self` and `max_weight`: `rng` needs to be provided for the
+    /// `Uniform` case
     #[inline]
     pub fn generate_weight<R: Rng, W: Weight>(&self, rng: &mut R, max_weight: W) -> W {
         match self {
@@ -219,6 +221,17 @@ impl InitialWeights {
             Self::Zero => W::zero(),
             Self::Uniform => rng.gen_range(W::zero()..=max_weight),
             Self::Value(v) => W::from_f64(v.clamp(0.0, max_weight.to_f64())),
+        }
+    }
+
+    /// Return a char representing the initial weight type: used for logging in experiments
+    #[inline]
+    pub fn to_char(&self) -> char {
+        match self {
+            Self::Maximum => 'm',
+            Self::Zero => 'z',
+            Self::Uniform => 'u',
+            Self::Value(_) => 'v',
         }
     }
 }

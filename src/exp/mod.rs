@@ -124,19 +124,21 @@ where
         let mut bf_tester = BellmanFord::new(self.n());
 
         #[cfg(feature = "intervals")]
-        let mut round = 0usize;
-
-        #[cfg(feature = "intervals")]
         let mut timer = Instant::now();
 
-        for _ in 0..num_rounds {
+        #[cfg(feature = "acceptance")]
+        let mut num_accepted_rounds = 0usize;
+
+        #[cfg(feature = "acceptance")]
+        let mut avg_accepted_rounds = 0.0f64;
+
+        for i in 0..num_rounds {
             #[cfg(feature = "intervals")]
             {
-                round += 1;
-                if round % 10000 == 0 {
+                if (i + 1) % 10000 == 0 {
                     println!(
                         "{},{},{},{},twodir",
-                        round / 10000,
+                        (i + 1) / 10000,
                         self.avg_weight(),
                         self.frac_negative_edges(),
                         timer.elapsed().as_millis()
@@ -151,6 +153,11 @@ where
 
             let potential_weight = self.potential_weight((edge.source, edge.target, weight).into());
             if potential_weight >= W::zero() {
+                #[cfg(feature = "acceptance")]
+                {
+                    num_accepted_rounds += 1;
+                }
+
                 self.update_weight(idx, weight);
 
                 if params.bftest {
@@ -159,12 +166,14 @@ where
                         "[FAIL] BF found a negative weight cycle when BiDijkstra accepted directly"
                     );
                 }
-                continue;
-            }
-
-            if let Some(((df, db), shortest_path_tree)) =
+            } else if let Some(((df, db), shortest_path_tree)) =
                 bidijkstra.run(self, edge.target, edge.source, -potential_weight)
             {
+                #[cfg(feature = "acceptance")]
+                {
+                    num_accepted_rounds += 1;
+                }
+
                 self.update_weight(idx, weight);
                 for (node, dist) in shortest_path_tree {
                     if node < self.n() {
@@ -186,6 +195,20 @@ where
                     "[FAIL] BF found no negative weight cycle when BiDijkstra rejected"
                 );
             }
+
+            #[cfg(feature = "acceptance")]
+            {
+                avg_accepted_rounds += (num_accepted_rounds as f64 / (i + 1) as f64);
+                if (i + 1) % 1000 == 0 {
+                    println!(
+                        "{},{},{}",
+                        i + 1,
+                        avg_accepted_rounds / 1000.0,
+                        params.initial_weights.to_char()
+                    );
+                    avg_accepted_rounds = 0.0;
+                }
+            }
         }
     }
 }
@@ -196,6 +219,12 @@ where
     W: Weight,
     [(); W::NUM_BITS + 1]: Sized,
 {
+    #[cfg(feature = "acceptance")]
+    {
+        run_with_graph::<W, Graph2<W>>(params);
+        return;
+    }
+
     match params.algorithm {
         Algorithm::Dijkstra => run_with_graph::<W, Graph1<W>>(params),
         Algorithm::BiDijkstra => run_with_graph::<W, Graph2<W>>(params),

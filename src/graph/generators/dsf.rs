@@ -1,6 +1,6 @@
 use rand_distr::{Distribution, Uniform};
 
-use crate::{graph::*, InitialWeights};
+use crate::graph::*;
 
 /// The directed scale-free model
 ///
@@ -40,13 +40,8 @@ impl DirectedScaleFree {
     }
 }
 
-impl<W: Weight> GraphGenerator<W> for DirectedScaleFree {
-    fn generate(
-        &mut self,
-        rng: &mut impl rand::prelude::Rng,
-        default_weight: InitialWeights,
-        max_weight: W,
-    ) -> Vec<Edge<W>> {
+impl GraphGenerator for DirectedScaleFree {
+    fn generate(&mut self, rng: &mut impl rand::prelude::Rng) -> Vec<(Node, Node)> {
         let mut edges = Vec::new();
         let mut in_degrees = vec![0usize; self.n];
         let mut out_degrees = vec![0usize; self.n];
@@ -122,7 +117,7 @@ impl<W: Weight> GraphGenerator<W> for DirectedScaleFree {
             out_degrees[u] += 1;
             in_degrees[v] += 1;
 
-            edges.push((u, v, default_weight.generate_weight(rng, max_weight)).into());
+            edges.push((u, v));
         }
 
         edges

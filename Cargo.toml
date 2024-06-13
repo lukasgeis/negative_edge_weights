@@ -18,3 +18,4 @@ exp = []                # When this flag is enabled, we do an experiment
 dfs_size = ["exp"]      # Log the number of traversed zero edges in Dijkstra 
 sptree_size = ["exp"]   # Log the size of the shortest path trees in Dijkstra or BiDijkstra
 intervals = ["exp"]     # Every 10000 rounds of the MCMC, log time taken, average weight, fraction of negative edges
+acceptance = ["exp"]    # Log the acceptance rate over time  

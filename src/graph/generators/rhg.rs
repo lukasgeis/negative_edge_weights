@@ -1,4 +1,4 @@
-use crate::{graph::*, InitialWeights};
+use crate::graph::*;
 use std::{
     f64::consts::{PI, TAU},
     vec,
@@ -226,22 +226,20 @@ fn binary_search_partition(val: f64, points: &[Coord]) -> usize {
     left
 }
 
-fn generate_threshold_rhg<W: Weight>(
+fn generate_threshold_rhg(
     rhg: &Hyperbolic,
     rng: &mut impl Rng,
     band_limits: &[f64],
     band_bounds: &[usize],
     coords: &[Coord],
-    default_weight: InitialWeights,
-    max_weight: W,
-) -> Vec<Edge<W>> {
+) -> Vec<(Node, Node)> {
     let band_cosh = band_limits.iter().map(|b| b.cosh()).collect::<Vec<f64>>();
     let radius_cosh = *band_cosh.last().unwrap();
     let band_sinh = band_limits.iter().map(|b| b.sinh()).collect::<Vec<f64>>();
     coords
         .iter()
         .flat_map(|v| {
-            let mut edges = Vec::<Edge<W>>::new();
+            let mut edges = Vec::<(Node, Node)>::new();
             // `rhs_safe` is used to find the borders of the inner circle, wherein every node is definitely near enough to v.
             // It is defined hear as the inner rectangle of the current band is the outer rectangle of the next band,
             // so we can reuse the value.
@@ -310,42 +308,14 @@ fn generate_threshold_rhg<W: Weight>(
                         if within_inner {
                             match rhg.decide_edge(rng) {
                                 EdgeResult::Both => {
-                                    edges.push(
-                                        (
-                                            v.id,
-                                            w.id,
-                                            default_weight.generate_weight(rng, max_weight),
-                                        )
-                                            .into(),
-                                    );
-                                    edges.push(
-                                        (
-                                            w.id,
-                                            v.id,
-                                            default_weight.generate_weight(rng, max_weight),
-                                        )
-                                            .into(),
-                                    );
+                                    edges.push((v.id, w.id));
+                                    edges.push((w.id, v.id));
                                 }
                                 EdgeResult::Forward => {
-                                    edges.push(
-                                        (
-                                            v.id,
-                                            w.id,
-                                            default_weight.generate_weight(rng, max_weight),
-                                        )
-                                            .into(),
-                                    );
+                                    edges.push((v.id, w.id));
                                 }
                                 EdgeResult::Backward => {
-                                    edges.push(
-                                        (
-                                            w.id,
-                                            v.id,
-                                            default_weight.generate_weight(rng, max_weight),
-                                        )
-                                            .into(),
-                                    );
+                                    edges.push((w.id, v.id));
                                 }
                             };
                         } else {
@@ -356,42 +326,14 @@ fn generate_threshold_rhg<W: Weight>(
                             if dist_cosh < radius_cosh {
                                 match rhg.decide_edge(rng) {
                                     EdgeResult::Both => {
-                                        edges.push(
-                                            (
-                                                v.id,
-                                                w.id,
-                                                default_weight.generate_weight(rng, max_weight),
-                                            )
-                                                .into(),
-                                        );
-                                        edges.push(
-                                            (
-                                                w.id,
-                                                v.id,
-                                                default_weight.generate_weight(rng, max_weight),
-                                            )
-                                                .into(),
-                                        );
+                                        edges.push((v.id, w.id));
+                                        edges.push((w.id, v.id));
                                     }
                                     EdgeResult::Forward => {
-                                        edges.push(
-                                            (
-                                                v.id,
-                                                w.id,
-                                                default_weight.generate_weight(rng, max_weight),
-                                            )
-                                                .into(),
-                                        );
+                                        edges.push((v.id, w.id));
                                     }
                                     EdgeResult::Backward => {
-                                        edges.push(
-                                            (
-                                                w.id,
-                                                v.id,
-                                                default_weight.generate_weight(rng, max_weight),
-                                            )
-                                                .into(),
-                                        );
+                                        edges.push((w.id, v.id));
                                     }
                                 };
                             }
@@ -404,13 +346,8 @@ fn generate_threshold_rhg<W: Weight>(
         .collect()
 }
 
-impl<W: Weight> GraphGenerator<W> for Hyperbolic {
-    fn generate(
-        &mut self,
-        rng: &mut impl Rng,
-        default_weight: InitialWeights,
-        max_weight: W,
-    ) -> Vec<Edge<W>> {
+impl GraphGenerator for Hyperbolic {
+    fn generate(&mut self, rng: &mut impl Rng) -> Vec<(Node, Node)> {
         let radius = if let Some(deg) = self.avg_deg {
             assert!(
                 self.radius.is_none(),
@@ -444,14 +381,6 @@ impl<W: Weight> GraphGenerator<W> for Hyperbolic {
         coords.sort_unstable_by(|u, v| u.partial_cmp(v).unwrap());
         let band_bounds = get_band_bounds(&band_sizes);
 
-        generate_threshold_rhg(
-            self,
-            rng,
-            &band_limits,
-            &band_bounds,
-            &coords,
-            default_weight,
-            max_weight,
-        )
+        generate_threshold_rhg(self, rng, &band_limits, &band_bounds, &coords)
     }
 }

@@ -80,10 +80,7 @@ impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
             Source::Gnp { nodes, avg_deg } => {
                 assert!(nodes > 1 && avg_deg > 0.0);
                 let prob = avg_deg / (nodes as f64);
-                (
-                    nodes,
-                    Gnp::new(nodes, prob).generate(rng, default_weight, max_weight),
-                )
+                (nodes, Gnp::new(nodes, prob).generate(rng))
             }
             Source::Dsf {
                 nodes,
@@ -98,11 +95,7 @@ impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
 
                 (
                     nodes,
-                    DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in).generate(
-                        rng,
-                        default_weight,
-                        max_weight,
-                    ),
+                    DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in).generate(rng),
                 )
             }
             Source::Rhg {
@@ -114,23 +107,19 @@ impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
                 prob,
             } => (
                 nodes,
-                Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob).generate(
-                    rng,
-                    default_weight,
-                    max_weight,
-                ),
+                Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob).generate(rng),
             ),
-            Source::Complete { nodes, loops } => (
-                nodes,
-                Complete::new(nodes, loops).generate(rng, default_weight, max_weight),
-            ),
-            Source::Cycle { nodes } => (
-                nodes,
-                Cycle::new(nodes).generate(rng, default_weight, max_weight),
-            ),
+            Source::Complete { nodes, loops } => (nodes, Complete::new(nodes, loops).generate(rng)),
+            Source::Cycle { nodes } => (nodes, Cycle::new(nodes).generate(rng)),
         };
 
-        Self::from_edges(n, edges)
+        Self::from_edges(
+            n,
+            edges
+                .into_iter()
+                .map(|(u, v)| (u, v, default_weight.generate_weight(rng, max_weight)).into())
+                .collect(),
+        )
     }
 }
 

@@ -1,6 +1,6 @@
 use rand_distr::Geometric;
 
-use crate::{graph::*, InitialWeights};
+use crate::graph::*;
 
 /// The G(n,p) graph generator
 pub struct Gnp {
@@ -23,13 +23,8 @@ impl Gnp {
     }
 }
 
-impl<W: Weight> GraphGenerator<W> for Gnp {
-    fn generate(
-        &mut self,
-        rng: &mut impl Rng,
-        default_weight: InitialWeights,
-        max_weight: W,
-    ) -> Vec<Edge<W>> {
+impl GraphGenerator for Gnp {
+    fn generate(&mut self, rng: &mut impl Rng) -> Vec<(Node, Node)> {
         let mut edges = Vec::new();
 
         let mut cur = 0u64;
@@ -49,7 +44,7 @@ impl<W: Weight> GraphGenerator<W> for Gnp {
             let u = ((cur - 1) / self.n) as Node;
             let v = ((cur - 1) % self.n) as Node;
 
-            edges.push((u, v, default_weight.generate_weight(rng, max_weight)).into());
+            edges.push((u, v));
         }
 
         edges
