@@ -2,7 +2,7 @@ use std::{fmt::Debug, io::Write};
 
 use rand::Rng;
 
-use crate::{weight::Weight, Source};
+use crate::{weight::Weight, InitialWeights, Source};
 
 pub mod bellman_ford;
 mod generators;
@@ -61,16 +61,29 @@ pub trait GraphEdgeList<W: Weight> {
 }
 
 pub trait GraphFromSource<W: Weight> {
-    fn from_source<R: Rng>(source: &Source, rng: &mut R, default_weight: W) -> Self;
+    fn from_source<R: Rng>(
+        source: &Source,
+        rng: &mut R,
+        default_weight: InitialWeights,
+        max_weight: W,
+    ) -> Self;
 }
 
 impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
-    fn from_source<R: Rng>(source: &Source, rng: &mut R, default_weight: W) -> Self {
+    fn from_source<R: Rng>(
+        source: &Source,
+        rng: &mut R,
+        default_weight: InitialWeights,
+        max_weight: W,
+    ) -> Self {
         let (n, edges) = match *source {
             Source::Gnp { nodes, avg_deg } => {
                 assert!(nodes > 1 && avg_deg > 0.0);
                 let prob = avg_deg / (nodes as f64);
-                (nodes, Gnp::new(nodes, prob).generate(rng, default_weight))
+                (
+                    nodes,
+                    Gnp::new(nodes, prob).generate(rng, default_weight, max_weight),
+                )
             }
             Source::Dsf {
                 nodes,
@@ -85,8 +98,11 @@ impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
 
                 (
                     nodes,
-                    DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in)
-                        .generate(rng, default_weight),
+                    DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in).generate(
+                        rng,
+                        default_weight,
+                        max_weight,
+                    ),
                 )
             }
             Source::Rhg {
@@ -98,14 +114,20 @@ impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
                 prob,
             } => (
                 nodes,
-                Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob)
-                    .generate(rng, default_weight),
+                Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob).generate(
+                    rng,
+                    default_weight,
+                    max_weight,
+                ),
             ),
             Source::Complete { nodes, loops } => (
                 nodes,
-                Complete::new(nodes, loops).generate(rng, default_weight),
+                Complete::new(nodes, loops).generate(rng, default_weight, max_weight),
             ),
-            Source::Cycle { nodes } => (nodes, Cycle::new(nodes).generate(rng, default_weight)),
+            Source::Cycle { nodes } => (
+                nodes,
+                Cycle::new(nodes).generate(rng, default_weight, max_weight),
+            ),
         };
 
         Self::from_edges(n, edges)

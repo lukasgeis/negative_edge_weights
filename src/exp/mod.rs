@@ -216,8 +216,8 @@ where
         Pcg64::from_entropy()
     };
 
-    let default_weight = W::from_f64(params.max_weight);
-    let mut graph: G = G::from_source(&params.source, &mut rng, default_weight);
+    let max_weight = W::from_f64(params.max_weight);
+    let mut graph: G = G::from_source(&params.source, &mut rng, params.initial_weights, max_weight);
 
     graph.run_exp_mcmc(&mut rng, &params);
 }

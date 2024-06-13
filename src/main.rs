@@ -3,14 +3,15 @@
 #![feature(generic_const_items)]
 #![feature(float_next_up_down)]
 
-use std::{convert::Infallible, path::PathBuf, str::FromStr};
+use std::{convert::Infallible, num::ParseFloatError, path::PathBuf, str::FromStr};
 
 use graph::Node;
+use rand::Rng;
 use structopt::StructOpt;
 
 #[cfg(test)]
 pub(crate) use graph::test_graph_data as test_data;
-use weight::WeightType;
+use weight::{Weight, WeightType};
 
 #[cfg(not(feature = "exp"))]
 use crate::mcmc::run;
@@ -52,6 +53,10 @@ struct Parameters {
     /// Seed for the PRNG
     #[structopt(short = "s")]
     seed: Option<u64>,
+
+    /// Initial starting weights
+    #[structopt(short = "i", default_value = "max")]
+    initial_weights: InitialWeights,
 
     /// Optional output path for the resulting weighted graph
     #[structopt(short = "o")]
@@ -167,10 +172,14 @@ fn main() {
     };
 }
 
+/// Which algorithm to use for the MCMC
 #[derive(Debug, Copy, Clone)]
 pub enum Algorithm {
+    /// The onedirectional dijkstra search
     Dijkstra,
+    /// The bidirectional dijkstra search
     BiDijkstra,
+    /// The naive version using bellman ford
     BellmanFord,
 }
 
@@ -185,6 +194,47 @@ impl FromStr for Algorithm {
             Ok(Algorithm::BellmanFord)
         } else {
             Ok(Algorithm::BiDijkstra)
+        }
+    }
+}
+
+/// Starting weights for edges
+#[derive(Debug, Copy, Clone)]
+pub enum InitialWeights {
+    /// Start with `Parameters::max_weight`
+    Maximum,
+    /// Start with `0`
+    Zero,
+    /// Start with a uniform weight in `[0,Parameters::max_weight]`
+    Uniform,
+    /// Start with a spefified weight: will be clamped to `[0,Parameters::max_weight]`
+    Value(f64),
+}
+
+impl InitialWeights {
+    #[inline]
+    pub fn generate_weight<R: Rng, W: Weight>(&self, rng: &mut R, max_weight: W) -> W {
+        match self {
+            Self::Maximum => max_weight,
+            Self::Zero => W::zero(),
+            Self::Uniform => rng.gen_range(W::zero()..=max_weight),
+            Self::Value(v) => W::from_f64(v.clamp(0.0, max_weight.to_f64())),
+        }
+    }
+}
+
+impl FromStr for InitialWeights {
+    type Err = ParseFloatError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with('m') {
+            Ok(Self::Maximum)
+        } else if s.starts_with('z') {
+            Ok(Self::Zero)
+        } else if s.starts_with('u') {
+            Ok(Self::Uniform)
+        } else {
+            s.parse::<f64>().map(Self::Value)
         }
     }
 }

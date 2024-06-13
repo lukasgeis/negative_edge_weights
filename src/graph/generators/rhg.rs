@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::{graph::*, InitialWeights};
 use std::{
     f64::consts::{PI, TAU},
     vec,
@@ -232,7 +232,8 @@ fn generate_threshold_rhg<W: Weight>(
     band_limits: &[f64],
     band_bounds: &[usize],
     coords: &[Coord],
-    default_weight: W,
+    default_weight: InitialWeights,
+    max_weight: W,
 ) -> Vec<Edge<W>> {
     let band_cosh = band_limits.iter().map(|b| b.cosh()).collect::<Vec<f64>>();
     let radius_cosh = *band_cosh.last().unwrap();
@@ -309,14 +310,42 @@ fn generate_threshold_rhg<W: Weight>(
                         if within_inner {
                             match rhg.decide_edge(rng) {
                                 EdgeResult::Both => {
-                                    edges.push((v.id, w.id, default_weight).into());
-                                    edges.push((w.id, v.id, default_weight).into());
+                                    edges.push(
+                                        (
+                                            v.id,
+                                            w.id,
+                                            default_weight.generate_weight(rng, max_weight),
+                                        )
+                                            .into(),
+                                    );
+                                    edges.push(
+                                        (
+                                            w.id,
+                                            v.id,
+                                            default_weight.generate_weight(rng, max_weight),
+                                        )
+                                            .into(),
+                                    );
                                 }
                                 EdgeResult::Forward => {
-                                    edges.push((v.id, w.id, default_weight).into());
+                                    edges.push(
+                                        (
+                                            v.id,
+                                            w.id,
+                                            default_weight.generate_weight(rng, max_weight),
+                                        )
+                                            .into(),
+                                    );
                                 }
                                 EdgeResult::Backward => {
-                                    edges.push((w.id, v.id, default_weight).into());
+                                    edges.push(
+                                        (
+                                            w.id,
+                                            v.id,
+                                            default_weight.generate_weight(rng, max_weight),
+                                        )
+                                            .into(),
+                                    );
                                 }
                             };
                         } else {
@@ -327,14 +356,42 @@ fn generate_threshold_rhg<W: Weight>(
                             if dist_cosh < radius_cosh {
                                 match rhg.decide_edge(rng) {
                                     EdgeResult::Both => {
-                                        edges.push((v.id, w.id, default_weight).into());
-                                        edges.push((w.id, v.id, default_weight).into());
+                                        edges.push(
+                                            (
+                                                v.id,
+                                                w.id,
+                                                default_weight.generate_weight(rng, max_weight),
+                                            )
+                                                .into(),
+                                        );
+                                        edges.push(
+                                            (
+                                                w.id,
+                                                v.id,
+                                                default_weight.generate_weight(rng, max_weight),
+                                            )
+                                                .into(),
+                                        );
                                     }
                                     EdgeResult::Forward => {
-                                        edges.push((v.id, w.id, default_weight).into());
+                                        edges.push(
+                                            (
+                                                v.id,
+                                                w.id,
+                                                default_weight.generate_weight(rng, max_weight),
+                                            )
+                                                .into(),
+                                        );
                                     }
                                     EdgeResult::Backward => {
-                                        edges.push((w.id, v.id, default_weight).into());
+                                        edges.push(
+                                            (
+                                                w.id,
+                                                v.id,
+                                                default_weight.generate_weight(rng, max_weight),
+                                            )
+                                                .into(),
+                                        );
                                     }
                                 };
                             }
@@ -348,7 +405,12 @@ fn generate_threshold_rhg<W: Weight>(
 }
 
 impl<W: Weight> GraphGenerator<W> for Hyperbolic {
-    fn generate(&mut self, rng: &mut impl Rng, default_weight: W) -> Vec<Edge<W>> {
+    fn generate(
+        &mut self,
+        rng: &mut impl Rng,
+        default_weight: InitialWeights,
+        max_weight: W,
+    ) -> Vec<Edge<W>> {
         let radius = if let Some(deg) = self.avg_deg {
             assert!(
                 self.radius.is_none(),
@@ -389,6 +451,7 @@ impl<W: Weight> GraphGenerator<W> for Hyperbolic {
             &band_bounds,
             &coords,
             default_weight,
+            max_weight,
         )
     }
 }

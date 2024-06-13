@@ -1,4 +1,4 @@
-use crate::graph::*;
+use crate::{graph::*, InitialWeights};
 
 mod dsf;
 mod gnp;
@@ -10,7 +10,12 @@ pub use rhg::*;
 
 /// A base trait for all graph generators
 pub trait GraphGenerator<W: Weight> {
-    fn generate(&mut self, rng: &mut impl Rng, default_weight: W) -> Vec<Edge<W>>;
+    fn generate(
+        &mut self,
+        rng: &mut impl Rng,
+        default_weight: InitialWeights,
+        max_weight: W,
+    ) -> Vec<Edge<W>>;
 }
 
 /// Generator for complete graphs with/without self-loops
@@ -31,14 +36,19 @@ impl Complete {
 
 impl<W: Weight> GraphGenerator<W> for Complete {
     #[inline]
-    fn generate(&mut self, _: &mut impl Rng, default_weight: W) -> Vec<Edge<W>> {
+    fn generate(
+        &mut self,
+        rng: &mut impl Rng,
+        default_weight: InitialWeights,
+        max_weight: W,
+    ) -> Vec<Edge<W>> {
         (0..(self.n * self.n))
             .filter_map(|x| {
                 let u = (x / self.n) as Node;
                 let v = (x % self.n) as Node;
 
                 if u != v || self.loops {
-                    Some((u, v, default_weight).into())
+                    Some((u, v, default_weight.generate_weight(rng, max_weight)).into())
                 } else {
                     None
                 }
@@ -63,9 +73,21 @@ impl Cycle {
 
 impl<W: Weight> GraphGenerator<W> for Cycle {
     #[inline]
-    fn generate(&mut self, _: &mut impl Rng, default_weight: W) -> Vec<Edge<W>> {
+    fn generate(
+        &mut self,
+        rng: &mut impl Rng,
+        default_weight: InitialWeights,
+        max_weight: W,
+    ) -> Vec<Edge<W>> {
         (0..self.n)
-            .map(|u| (u as Node, ((u + 1) % self.n) as Node, default_weight).into())
+            .map(|u| {
+                (
+                    u as Node,
+                    ((u + 1) % self.n) as Node,
+                    default_weight.generate_weight(rng, max_weight),
+                )
+                    .into()
+            })
             .collect()
     }
 }
