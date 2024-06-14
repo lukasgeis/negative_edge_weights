@@ -23,18 +23,21 @@ do
         ROUNDS=$(($ROUNDS_BASE * 50 / $DEGREE))
 
         # Maximum Weight
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out"
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out"
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out"
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out" &
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out" &
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out" &
+        wait
 
         # Zero
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out"
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out"
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out"
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out" &
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out" &
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out" &
+        wait
 
         # Uniform
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out"
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out"
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out"
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out" &
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out" &
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out" &
+        wait
     done
 done
