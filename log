@@ -1,0 +1,24 @@
+make: Entering directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp'
+make[1]: Entering directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp/acceptance'
+rm -r ../../data/acceptance
+rm -r res
+bash run.sh
+mkdir -p res
+python3 plot.py
+make[1]: Leaving directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp/acceptance'
+make[1]: Entering directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp/insertions'
+rm -r ../../data/insertions
+rm -r res
+bash run.sh
+Round 1 Done
+mkdir -p res
+python3 plot.py
+make[1]: Leaving directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp/insertions'
+make[1]: Entering directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp/intervals'
+rm -r ../../data/intervals
+rm -r res
+bash run.sh
+mkdir -p res
+python3 plot.py
+make[1]: Leaving directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp/intervals'
+make: Leaving directory '/home/lukas/Desktop/Dev/RNEW/mcmc/exp'

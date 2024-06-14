@@ -10,15 +10,15 @@ use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 
 use crate::{
-    graph::bellman_ford::Graph as Graph3, bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, graph::*, weight::Weight, Algorithm,
-    Parameters,
+    bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, graph::bellman_ford::Graph as Graph3,
+    graph::*, weight::Weight, Algorithm, Parameters,
 };
 
 use self::{bellmanford::BellmanFord, bidijkstra::BiDijkstra, dijkstra::Dijkstra};
 
+pub mod bellmanford;
 pub mod bidijkstra;
 pub mod dijkstra;
-pub mod bellmanford;
 
 pub trait ExpNegWeightMCMC<W>
 where
@@ -56,7 +56,7 @@ where
                 round += 1;
                 if round % 10000 == 0 {
                     println!(
-                        "{},{},{},{},onedir",
+                        "{},{},{},{},d",
                         round / 10000,
                         self.avg_weight(),
                         self.frac_negative_edges(),
@@ -137,7 +137,7 @@ where
             {
                 if (i + 1) % 10000 == 0 {
                     println!(
-                        "{},{},{},{},twodir",
+                        "{},{},{},{},bd",
                         (i + 1) / 10000,
                         self.avg_weight(),
                         self.frac_negative_edges(),
@@ -201,10 +201,11 @@ where
                 avg_accepted_rounds += (num_accepted_rounds as f64 / (i + 1) as f64);
                 if (i + 1) % 1000 == 0 {
                     println!(
-                        "{},{},{}",
+                        "{},{},{},{}",
                         i + 1,
                         avg_accepted_rounds / 1000.0,
-                        params.initial_weights.to_char()
+                        params.initial_weights.to_char(),
+                        params.source.degree()
                     );
                     avg_accepted_rounds = 0.0;
                 }

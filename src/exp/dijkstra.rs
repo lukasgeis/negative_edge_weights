@@ -51,7 +51,7 @@ where
         if source_node == target_node {
             return None;
         }
-    
+
         #[cfg(feature = "insertions")]
         let mut num_insertions = 1usize;
 

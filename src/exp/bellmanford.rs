@@ -4,7 +4,6 @@ use ez_bitset::bitset::BitSet;
 
 use crate::{graph::*, weight::Weight};
 
-
 pub struct BellmanFord<W: Weight> {
     distances: Vec<W>,
     queue: VecDeque<Node>,

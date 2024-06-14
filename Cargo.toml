@@ -13,7 +13,7 @@ rand_pcg = "0.3.1"
 structopt = "0.3.26"
 
 [features]
-default = ["insertions"]            # Set default features  
+default = []            # Set default features  
 exp = []                # When this flag is enabled, we do an experiment
 dfs_size = ["exp"]      # Log the number of traversed zero edges in Dijkstra 
 intervals = ["exp"]     # Every 10000 rounds of the MCMC, log time taken, average weight, fraction of negative edges

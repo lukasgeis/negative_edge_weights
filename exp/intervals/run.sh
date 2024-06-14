@@ -1,3 +1,6 @@
+cd $(dirname "$0")
+cd ../..
+
 cargo build --release --features intervals
 
 OUTPUT="data/intervals"
@@ -10,16 +13,21 @@ echo $HEADER > "$OUTPUT/gnp.out"
 echo $HEADER > "$OUTPUT/rhg.out"
 echo $HEADER > "$OUTPUT/dsf.out"
 
+NODES=10000
+DEGREE=10
+ROUNDS=100
+
 for NUM in {1..10} 
 do
-    ./target/release/random_negative_weights -w=-100 -W 100 -r 50 -t f64 --bidir gnp -n 10000 -d 10 >> "$OUTPUT/gnp.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r 50 -t f64 --bidir rhg -n 10000 -d 10 >> "$OUTPUT/rhg.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r 50 -t f64 --bidir dsf -n 10000 -d 10 >> "$OUTPUT/dsf.out"
-    echo "TwoDir - Round $NUM Done"
+    # BiDijkstra
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out"
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out"
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out"
 
-    ./target/release/random_negative_weights -w=-100 -W 100 -r 50 -t f64 gnp -n 10000 -d 10 >> "$OUTPUT/gnp.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r 50 -t f64 rhg -n 10000 -d 10 >> "$OUTPUT/rhg.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r 50 -t f64 dsf -n 10000 -d 10 >> "$OUTPUT/dsf.out"
-    echo "OneDir - Round $NUM Done"
+    # Dijkstra
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out"
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out"
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out"
+
 done
 

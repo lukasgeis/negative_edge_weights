@@ -157,19 +157,19 @@ enum Source {
     },
 }
 
-fn main() {
-    let params = Parameters::from_args();
-    assert!(params.min_weight < params.max_weight);
-    assert!(params.rounds_per_edge > 0.0);
-
-    match params.weight_type {
-        WeightType::F32 => run::<f32>(params),
-        WeightType::F64 => run::<f64>(params),
-        WeightType::I8 => run::<i8>(params),
-        WeightType::I16 => run::<i16>(params),
-        WeightType::I32 => run::<i32>(params),
-        WeightType::I64 => run::<i64>(params),
-    };
+#[cfg(feature = "exp")]
+impl Source {
+    /// Returns the average degree of a given source: `0.0` if not specified
+    #[inline]
+    pub fn degree(&self) -> f64 {
+        match self {
+            Self::Gnp { avg_deg, .. } => *avg_deg,
+            Self::Dsf { avg_deg, .. } => avg_deg.unwrap_or(0.0),
+            Self::Rhg { avg_deg, .. } => avg_deg.unwrap_or(0.0),
+            Self::Cycle { .. } => 1.0,
+            Self::Complete { nodes, loops } => *nodes as f64 - 1.0 + (*loops as usize) as f64,
+        }
+    }
 }
 
 /// Which algorithm to use for the MCMC
@@ -250,4 +250,19 @@ impl FromStr for InitialWeights {
             s.parse::<f64>().map(Self::Value)
         }
     }
+}
+
+fn main() {
+    let params = Parameters::from_args();
+    assert!(params.min_weight < params.max_weight);
+    assert!(params.rounds_per_edge > 0.0);
+
+    match params.weight_type {
+        WeightType::F32 => run::<f32>(params),
+        WeightType::F64 => run::<f64>(params),
+        WeightType::I8 => run::<i8>(params),
+        WeightType::I16 => run::<i16>(params),
+        WeightType::I32 => run::<i32>(params),
+        WeightType::I64 => run::<i64>(params),
+    };
 }
