@@ -3,6 +3,13 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 import pandas as pd
 
+import sys
+
+if len(sys.argv) > 1:
+    plot_dir = "res/test"
+else:
+    plot_dir = "res"
+
 data_path = "../../data/acceptance"
 
 gnp = pd.read_csv(f"{data_path}/gnp.out")
@@ -89,7 +96,7 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
             label.set_position((-1.4 * width, 0))
 
     plt.savefig(
-        f"res/{file_name}.pdf",
+        f"{plot_dir}/{file_name}.pdf",
         format="pdf",
         bbox_inches="tight"
     )

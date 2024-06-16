@@ -4,16 +4,27 @@ PLOT_DIR := res
 __data_dir := $(shell mkdir -p ${DATA_DIR})
 __plot_dir := $(shell mkdir -p ${PLOT_DIR})
 
+.PHONY: all run plot test clean prep
 
 all: clean run plot
 
 run:
-	bash run.sh
+	bash run.sh -n 10000 -r 200
 
 plot:
-	mkdir -p ${PLOT_DIR}
+	. ./../../pyenv/bin/activate
 	python3 plot.py
+
+test: clean
+	bash run.sh -n 100 -r 2
+	mkdir -p ${PLOT_DIR}/test
+	. ./../../pyenv/bin/activate
+	python3 plot.py test
 
 clean:
 	rm -r ${DATA_DIR}
-	rm -r ${PLOT_DIR}
+
+prep:
+	python3 -m venv ../../pyenv
+	. ./../../pyenv/bin/activate
+	pip3 install matplotlib pandas seaborn

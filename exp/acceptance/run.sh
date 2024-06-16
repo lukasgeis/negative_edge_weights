@@ -7,14 +7,25 @@ OUTPUT="data/acceptance"
 
 mkdir -p $OUTPUT
 
+for GEN in "gnp" "rhg" "dsf"
+do
+    mkdir -p "$OUTPUT/$GEN"     
+done
+
+
 HEADER="round,rate,initial,degree"
 
 echo $HEADER > "$OUTPUT/gnp.out"
 echo $HEADER > "$OUTPUT/rhg.out"
 echo $HEADER > "$OUTPUT/dsf.out"
 
-NODES=10000
-ROUNDS_BASE=1000
+while getopts n:r: flag
+do
+    case "${flag}" in
+        n) NODES=${OPTARG};;
+        r) ROUNDS_BASE=${OPTARG};;
+    esac
+done
 
 for NUM in {1..10} 
 do
@@ -22,22 +33,19 @@ do
     do 
         ROUNDS=$(($ROUNDS_BASE * 50 / $DEGREE))
 
-        # Maximum Weight
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out" &
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out" &
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out" &
-        wait
-
-        # Zero
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out" &
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out" &
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out" &
-        wait
-
-        # Uniform
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out" &
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out" &
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out" &
-        wait
+        for GEN in "gnp" "rhg" "dsf"
+        do
+            ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i m $GEN -n $NODES -d $DEGREE >> "$OUTPUT/$GEN/m_${DEGREE}_$NUM.out" & 
+            ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i z $GEN -n $NODES -d $DEGREE >> "$OUTPUT/$GEN/z_${DEGREE}_$NUM.out" & 
+            ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -i u $GEN -n $NODES -d $DEGREE >> "$OUTPUT/$GEN/u_${DEGREE}_$NUM.out" & 
+        done
     done
+done
+
+wait
+
+for GEN in "gnp" "rhg" "dsf"
+do
+    cat $OUTPUT/${GEN}/* >> "$OUTPUT/$GEN.out"
+    rm -r "$OUTPUT/$GEN"
 done

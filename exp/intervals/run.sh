@@ -13,21 +13,20 @@ echo $HEADER > "$OUTPUT/gnp.out"
 echo $HEADER > "$OUTPUT/rhg.out"
 echo $HEADER > "$OUTPUT/dsf.out"
 
-NODES=10000
-DEGREE=10
-ROUNDS=100
+while getopts n:d:r: flag
+do
+    case "${flag}" in
+        n) NODES=${OPTARG};;
+        d) DEGREE=${OPTARG};;
+        r) ROUNDS=${OPTARG};;
+    esac
+done
 
 for NUM in {1..10} 
 do
-    # BiDijkstra
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out"
-
-    # Dijkstra
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d gnp -n $NODES -d $DEGREE >> "$OUTPUT/gnp.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d rhg -n $NODES -d $DEGREE >> "$OUTPUT/rhg.out"
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d dsf -n $NODES -d $DEGREE >> "$OUTPUT/dsf.out"
-
+    for GEN in "gnp" "rhg" "dsf"
+    do
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd gnp -n $NODES -d $DEGREE >> "$OUTPUT/$GEN.out"
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d gnp -n $NODES -d $DEGREE >> "$OUTPUT/$GEN.out"
+    done
 done
-

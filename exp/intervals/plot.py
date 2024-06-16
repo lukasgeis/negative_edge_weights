@@ -2,6 +2,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+import sys
+
+if len(sys.argv) > 1:
+    plot_dir = "res/test"
+else:
+    plot_dir = "res"
+
 data_path = "../../data/intervals"
 
 gnp = pd.read_csv(f"{data_path}/gnp.out")
@@ -33,7 +40,7 @@ def plot_data(data: pd.DataFrame, y_col: str, y_label: str, file_name: str):
     plot.get_legend().set_title(r"\textsc{Generator}")
 
     plt.savefig(
-        f"res/{file_name}.pdf",
+        f"{plot_dir}/{file_name}.pdf",
         format="pdf",
         bbox_inches="tight"
     )

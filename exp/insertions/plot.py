@@ -2,6 +2,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+import sys
+
+if len(sys.argv) > 1:
+    plot_dir = "res/test"
+else:
+    plot_dir = "res"
+
 data_path = "../../data/insertions"
 
 gnp = pd.read_csv(f"{data_path}/gnp.out")
@@ -44,7 +51,7 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     sns.move_legend(plot, "upper left")
 
     plt.savefig(
-        f"res/{file_name}.pdf",
+        f"{plot_dir}/{file_name}.pdf",
         format="pdf",
         bbox_inches="tight"
     )
