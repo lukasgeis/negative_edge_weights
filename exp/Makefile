@@ -26,6 +26,8 @@ clean: ./*/
 	done
 
 prep:
-	python3 -m venv ../pyenv
-	. ./../pyenv/bin/activate
-	pip3 install matplotlib pandas seaborn
+	( \
+		python3 -m venv ../pyenv; \
+		. ./../pyenv/bin/activate; \
+		pip3 install matplotlib pandas seaborn; \
+	)

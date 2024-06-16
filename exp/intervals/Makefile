@@ -4,7 +4,7 @@ PLOT_DIR := res
 __data_dir := $(shell mkdir -p ${DATA_DIR})
 __plot_dir := $(shell mkdir -p ${PLOT_DIR})
 
-.PHONY: all run plot test clean prep
+.PHONY: all run plot test clean
 
 all: clean run plot
 
@@ -23,8 +23,3 @@ test: clean
 	
 clean:
 	rm -r ${DATA_DIR}
-
-prep:
-	python3 -m venv ../../pyenv
-	. ./../../pyenv/bin/activate
-	pip3 install matplotlib pandas seaborn
