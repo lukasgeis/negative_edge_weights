@@ -46,6 +46,9 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
 
     plot.set(xlabel=None)
     plot.set(ylabel=r"\textsc{Insertions}")
+
+    plt.yscale("log")
+
     plot.get_legend().set_title("")
 
     sns.move_legend(plot, "upper left")

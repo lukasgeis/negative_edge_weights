@@ -60,6 +60,8 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     plot.set(xlabel=r"\textsc{Round}")
     plot.set(ylabel=r"\textsc{Acceptance Rate}")
 
+    plt.xscale("log")
+
     handles, labels = plot.get_legend_handles_labels()
 
     degree_lines = [
