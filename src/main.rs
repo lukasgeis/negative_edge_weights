@@ -155,6 +155,15 @@ enum Source {
         #[structopt(short = "n")]
         nodes: Node,
     },
+    File {
+        /// Path to file
+        #[structopt(short = "p", parse(from_os_str))]
+        path: PathBuf,
+
+        /// Are the edges in the graph file undirected?
+        #[structopt(short = "u", long)]
+        undirected: bool,
+    },
 }
 
 #[cfg(feature = "exp")]
@@ -168,6 +177,7 @@ impl Source {
             Self::Rhg { avg_deg, .. } => avg_deg.unwrap_or(0.0),
             Self::Cycle { .. } => 1.0,
             Self::Complete { nodes, loops } => *nodes as f64 - 1.0 + (*loops as usize) as f64,
+            Self::File { .. } => 0.0,
         }
     }
 }

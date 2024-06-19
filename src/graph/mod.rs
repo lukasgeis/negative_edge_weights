@@ -1,4 +1,8 @@
-use std::{fmt::Debug, io::Write};
+use std::{
+    fmt::Debug,
+    fs::File,
+    io::{BufRead, BufReader, Error, ErrorKind, Write},
+};
 
 use rand::Rng;
 
@@ -111,6 +115,14 @@ impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
             ),
             Source::Complete { nodes, loops } => (nodes, Complete::new(nodes, loops).generate(rng)),
             Source::Cycle { nodes } => (nodes, Cycle::new(nodes).generate(rng)),
+            Source::File {
+                ref path,
+                undirected,
+            } => {
+                let file = File::open(path).expect("Could not open file!");
+                let reader = BufReader::new(file);
+                read_graph_from_file(reader, undirected).unwrap()
+            }
         };
 
         Self::from_edges(
@@ -174,6 +186,99 @@ macro_rules! impl_debug_graph {
 }
 
 pub(crate) use impl_debug_graph;
+
+/// Returns an IO-Error with a custom error message.
+#[inline]
+fn io_error<O>(msg: &str) -> Result<O, Error> {
+    Err(Error::new(ErrorKind::Other, msg))
+}
+
+/// Reads a graph from file
+fn read_graph_from_file<R: BufRead>(
+    reader: R,
+    undirected: bool,
+) -> Result<(usize, Vec<(Node, Node)>), Error> {
+    let mut lines = reader.lines().filter_map(|x| -> Option<String> {
+        if let Ok(line) = x {
+            if !line.starts_with('%') {
+                return Some(line);
+            }
+        }
+        None
+    });
+
+    let (n, m) = parse_header(&mut lines)?;
+
+    let cap = m * (undirected as usize + 1);
+    let mut edges = Vec::with_capacity(cap);
+
+    for (line, content) in lines.enumerate() {
+        if line >= m {
+            return io_error("Too many edges given");
+        }
+
+        let edge: Vec<_> = content.trim().split(' ').collect();
+        if edge.len() != 2 {
+            return io_error(
+                format!(
+                    "Line {}: An edge should consist of exactly 2 nodes!",
+                    line + 1
+                )
+                .as_str(),
+            );
+        }
+
+        let u: Node = match edge[0].parse::<Node>() {
+            Ok(u) => u - 1,
+            Err(_) => {
+                return io_error(format!("Line {}: Cannot parse first node!", line + 1).as_str())
+            }
+        };
+
+        let v: Node = match edge[1].parse::<Node>() {
+            Ok(v) => v - 1,
+            Err(_) => {
+                return io_error(format!("Line {}: Cannot parse second node!", line + 1).as_str())
+            }
+        };
+
+        if u >= n as Node || v >= n as Node {
+            return io_error(format!("Line {}: Node in edge is bigger than n!", line + 1).as_str());
+        }
+
+        edges.push((u, v));
+        if undirected {
+            edges.push((v, u));
+        }
+    }
+
+    Ok((n, edges))
+}
+
+/// Parses the header of a graph file and returns (name, n, m) or an IO-Error.
+#[inline]
+fn parse_header<I: Iterator<Item = String>>(lines: &mut I) -> Result<(usize, usize), Error> {
+    if let Some(header) = lines.next() {
+        let fields: Vec<_> = header.split(' ').collect();
+        if fields.len() < 3 {
+            return io_error("Expected at least 3 header fields");
+        }
+
+        let n: usize = match fields[1].parse() {
+            Ok(n) => n,
+            Err(_) => return io_error("Cannot parse number of nodes"),
+        };
+
+        let m: usize = match fields[2].parse() {
+            Ok(m) => m,
+            Err(_) => return io_error("Cannot parse number of edges"),
+        };
+
+        Ok((n, m))
+    } else {
+        io_error("Cannot read header")
+    }
+}
 
 #[cfg(test)]
 pub(crate) mod test_graph_data {
