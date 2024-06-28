@@ -10,12 +10,12 @@ use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 
 use crate::{
-    bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, graph::bellman_ford::Graph as Graph3,
-    graph::*, weight::Weight, Algorithm, Parameters,
+    bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, exp::apsp::mean_max_paths, graph::{bellman_ford::Graph as Graph3, tarjan::num_sccs, *}, weight::Weight, Algorithm, Parameters
 };
 
 use self::{bellmanford::BellmanFord, bidijkstra::BiDijkstra, dijkstra::Dijkstra};
 
+pub mod apsp;
 pub mod bellmanford;
 pub mod bidijkstra;
 pub mod dijkstra;
@@ -144,6 +144,18 @@ where
                         timer.elapsed().as_millis()
                     );
                     timer = Instant::now();
+                }
+            }
+            #[cfg(feature = "apsp")]
+            {
+                if (i + 1) % self.m() as u64 == 0 {
+                    let (mean, max) = mean_max_paths(self);
+                    println!(
+                        "{},{},{}",
+                        (i + 1) / self.m() as u64,
+                        mean,
+                        max
+                    );
                 }
             }
 

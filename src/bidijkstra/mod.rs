@@ -113,6 +113,12 @@ impl<W: Weight> Graph<W> {
         self.edges[idx]
     }
 
+    #[allow(unused)]
+    #[inline]
+    pub fn potential(&self, u: Node) -> W {
+        self.potentials[u]
+    }
+
     #[inline]
     pub fn potential_weight(&self, edge: Edge<W>) -> W {
         edge.weight + self.potentials[edge.target] - self.potentials[edge.source]

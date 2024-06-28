@@ -28,7 +28,8 @@ acceptance = {
 
 
 sns.set_theme(style="darkgrid")
-sns.color_palette("colorblind")
+sns.set_palette("colorblind")
+sns.set(font_scale=1.3)
 plt.rcParams["text.usetex"] = True
 
 

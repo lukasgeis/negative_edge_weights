@@ -6,6 +6,13 @@ use std::{
 
 use rand_distr::Uniform;
 
+/// A coordinate in hyperbolic space consists of 
+/// - an angle `phi`
+/// - a radius `rad`
+/// - an `id` to identify the coordinate
+/// 
+/// We precompute values such as `sinh(rad), cosh(rad), sin(phi), cos(phi)` as well as the id of
+/// the band in which `rad` lies. Thus we do not need to store `rad`.
 #[derive(Debug, Clone, Copy)]
 struct Coord {
     id: usize,
@@ -32,9 +39,6 @@ impl PartialOrd for Coord {
 impl Eq for Coord {}
 
 /// A RandomHyperbolicGraph-Generator for the threshold-case
-///
-/// TODO: rewrite code for better structure and readibility: currently just copy-pasted from
-/// previous project
 #[derive(Debug, Copy, Clone)]
 pub struct Hyperbolic {
     /// Number of nodes
@@ -57,8 +61,11 @@ pub struct Hyperbolic {
 /// Indicates which edges to include
 #[derive(Debug, Copy, Clone)]
 pub enum EdgeResult {
+    /// For `(u,v)`, include `(u,v)` 
     Forward,
+    /// For `(u,v)`, include `(v,u)`
     Backward,
+    /// For `(u,v)`, include `(u,v)` and `(v,u)`
     Both,
 }
 
@@ -104,6 +111,9 @@ impl Hyperbolic {
     }
 }
 
+/// Computes for a given number of nodes `n`, average degree `k` and `alpha` the fitting radius
+///
+/// Adopted from `NetworKIT`
 fn get_target_radius(n: f64, k: f64, alpha: f64) -> f64 {
     let gamma = 2.0 * alpha + 1.0;
     let xi_inv = (gamma - 2.0) / (gamma - 1.0);
@@ -143,6 +153,7 @@ fn get_target_radius(n: f64, k: f64, alpha: f64) -> f64 {
     }
 }
 
+/// Samples `n` random coordinates (`Coord`) on the hyperbolic disk
 fn sample_coordinates(
     rng: &mut impl Rng,
     n: Node,
@@ -177,6 +188,7 @@ fn sample_coordinates(
     )
 }
 
+/// For a given radius `rad`, return the id of the band, where `rad` falls in
 #[inline]
 fn get_band_id(rad: f64, band_limits: &[f64]) -> usize {
     band_limits
@@ -188,6 +200,7 @@ fn get_band_id(rad: f64, band_limits: &[f64]) -> usize {
         .0
 }
 
+/// Compute the bounds of all bands via a prefix-sum
 #[inline]
 fn get_band_bounds(band_sizes: &[usize]) -> Vec<usize> {
     let mut band_bounds = vec![0]; // lower bound of lowest band
@@ -203,6 +216,9 @@ fn get_band_bounds(band_sizes: &[usize]) -> Vec<usize> {
     band_bounds
 }
 
+/// Binary-search a partition of points to find `val`
+///
+/// Somehow, this is faster than the `std`-implementation
 fn binary_search_partition(val: f64, points: &[Coord]) -> usize {
     if points.is_empty() {
         return 0;
@@ -226,6 +242,7 @@ fn binary_search_partition(val: f64, points: &[Coord]) -> usize {
     left
 }
 
+/// Generates the set of edges according to the sampled coordinates
 fn generate_threshold_rhg(
     rhg: &Hyperbolic,
     rng: &mut impl Rng,

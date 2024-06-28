@@ -23,11 +23,20 @@ initials = {
 }
 
 sns.set_theme(style="darkgrid")
-sns.color_palette("colorblind")
+sns.set_palette("colorblind")
+sns.set(font_scale=1.3)
 plt.rcParams["text.usetex"] = True
 
 
 def prep_and_plot_data(data: pd.DataFrame, file_name: str):
+    data = data[
+        data.groupby(
+            ["round", "initial", "degree"]
+        )[
+            ["round", "initial", "degree"]
+        ].transform('size') > 9
+    ]
+
     data["initial"].replace(initials, inplace=True)
 
     plt.clf()
@@ -87,7 +96,7 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     handles = [title_lines[0]] + degree_lines + [title_lines[1]] + handles
     labels = [degree_title] + degree_labels + [weight_title] + labels
 
-    leg = plt.legend(handles, labels)
+    leg = plt.legend(handles, labels, fontsize=13)
 
     for item, label in zip(leg.legend_handles, leg.texts):
         if label._text in [degree_title, weight_title]:

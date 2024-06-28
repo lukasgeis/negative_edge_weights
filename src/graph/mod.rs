@@ -9,6 +9,7 @@ use rand::Rng;
 use crate::{weight::Weight, InitialWeights, Source};
 
 pub mod bellman_ford;
+pub mod tarjan;
 mod generators;
 
 pub use generators::*;
