@@ -121,7 +121,7 @@ impl FromStr for WeightType {
         if t.starts_with('i') {
             if t.contains('8') {
                 Ok(WeightType::I8)
-            } else if t.contains('1') || t.contains('6') {
+            } else if t.contains('1') {
                 Ok(WeightType::I16)
             } else if t.contains('3') || t.contains('2') {
                 Ok(WeightType::I32)

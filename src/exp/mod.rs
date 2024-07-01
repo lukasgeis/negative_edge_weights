@@ -264,6 +264,12 @@ where
         return;
     }
 
+    #[cfg(feature = "cycle")]
+    {
+        run_cycle_exp::<W>(params);
+        return;
+    }
+
     match params.algorithm {
         Algorithm::Dijkstra => run_with_graph::<W, Graph1<W>>(params),
         Algorithm::BiDijkstra => run_with_graph::<W, Graph2<W>>(params),
@@ -288,4 +294,59 @@ where
     let mut graph: G = G::from_source(&params.source, &mut rng, params.initial_weights, max_weight);
 
     graph.run_exp_mcmc(&mut rng, &params);
+}
+
+
+#[cfg(feature = "cycle")]
+pub fn run_cycle_exp<W: Weight>(params: Parameters) {
+    use core::panic;
+
+    use crate::Source;
+
+    let mut rng = if let Some(seed) = params.seed {
+        Pcg64::seed_from_u64(seed)
+    } else {
+        Pcg64::from_entropy()
+    };
+
+    let min_weight = W::from_f64(params.min_weight);
+    let max_weight = W::from_f64(params.max_weight);
+
+    let n = if let Source::Cycle { nodes } = params.source {
+        nodes
+    } else {
+        panic!("The Cycle-Experiment needs the Cycle-Source!");
+    };
+
+    let edge_sampler = Uniform::new(0, n);
+    let weight_sampler = Uniform::new_inclusive(
+        min_weight,
+        max_weight
+    );
+
+    let logging_points = [n / 2, n, 2 * n, 5 * n, 10 * n];
+
+    let mut sum = W::zero();
+    let mut weights: Vec<W> = (0..n).map(|_| {
+        let w = params.initial_weights.generate_weight(&mut rng, max_weight);
+        sum += w;
+        w
+    }).collect();
+
+    for i in 0..=*logging_points.last().unwrap() {
+        let edge = edge_sampler.sample(&mut rng);
+        let weight = weight_sampler.sample(&mut rng);
+        
+        let delta = weight - weights[edge];
+        if sum + delta >= W::zero() {
+            sum += delta;
+            weights[edge] = weight;
+        }
+
+        if logging_points.contains(&i) {
+            weights.iter().for_each(|w| println!(
+                "{},{w}", (i as f64) / (n as f64)
+            ));
+        }
+    }
 }
