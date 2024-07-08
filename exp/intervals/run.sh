@@ -26,7 +26,7 @@ for NUM in {1..10}
 do
     for GEN in "gnp" "rhg" "dsf"
     do
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd gnp -n $NODES -d $DEGREE >> "$OUTPUT/$GEN.out"
-        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d gnp -n $NODES -d $DEGREE >> "$OUTPUT/$GEN.out"
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd $GEN -n $NODES -d $DEGREE >> "$OUTPUT/$GEN.out"
+        ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d $GEN -n $NODES -d $DEGREE >> "$OUTPUT/$GEN.out"
     done
 done

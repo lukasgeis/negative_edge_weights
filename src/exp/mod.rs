@@ -342,9 +342,13 @@ pub fn run_cycle_exp<W: Weight>(params: Parameters) {
         }
 
         if logging_points.contains(&i) {
-            weights
-                .iter()
-                .for_each(|w| println!("{},{w},{}", (i as f64) / (n as f64), params.initial_weights.to_char()));
+            weights.iter().for_each(|w| {
+                println!(
+                    "{},{w},{}",
+                    (i as f64) / (n as f64),
+                    params.initial_weights.to_char()
+                )
+            });
         }
     }
 }
