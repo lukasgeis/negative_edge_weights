@@ -7,7 +7,7 @@ OUTPUT="data/cycledist"
 
 mkdir -p $OUTPUT
 
-HEADER="round,weight"
+HEADER="round,weight,initial"
 
 echo $HEADER > "$OUTPUT/data.out"
 
@@ -20,5 +20,6 @@ done
 
 for NUM in {1..10} 
 do
+    ./target/release/random_negative_weights -w=-100 -W 100 -t i64 -i m cycle -n $NODES >> "$OUTPUT/data.out"
     ./target/release/random_negative_weights -w=-100 -W 100 -t i64 -i z cycle -n $NODES >> "$OUTPUT/data.out"
 done

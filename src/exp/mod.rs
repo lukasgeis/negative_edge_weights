@@ -10,7 +10,12 @@ use rand_distr::{Distribution, Uniform};
 use rand_pcg::Pcg64;
 
 use crate::{
-    bidijkstra::Graph as Graph2, dijkstra::Graph as Graph1, exp::apsp::mean_max_paths, graph::{bellman_ford::Graph as Graph3, tarjan::num_sccs, *}, weight::Weight, Algorithm, Parameters
+    bidijkstra::Graph as Graph2,
+    dijkstra::Graph as Graph1,
+    exp::apsp::mean_max_paths,
+    graph::{bellman_ford::Graph as Graph3, tarjan::num_sccs, *},
+    weight::Weight,
+    Algorithm, Parameters,
 };
 
 use self::{bellmanford::BellmanFord, bidijkstra::BiDijkstra, dijkstra::Dijkstra};
@@ -150,12 +155,7 @@ where
             {
                 if (i + 1) % self.m() as u64 == 0 {
                     let (mean, max) = mean_max_paths(self);
-                    println!(
-                        "{},{},{}",
-                        (i + 1) / self.m() as u64,
-                        mean,
-                        max
-                    );
+                    println!("{},{},{}", (i + 1) / self.m() as u64, mean, max);
                 }
             }
 
@@ -296,7 +296,6 @@ where
     graph.run_exp_mcmc(&mut rng, &params);
 }
 
-
 #[cfg(feature = "cycle")]
 pub fn run_cycle_exp<W: Weight>(params: Parameters) {
     use core::panic;
@@ -319,24 +318,23 @@ pub fn run_cycle_exp<W: Weight>(params: Parameters) {
     };
 
     let edge_sampler = Uniform::new(0, n);
-    let weight_sampler = Uniform::new_inclusive(
-        min_weight,
-        max_weight
-    );
+    let weight_sampler = Uniform::new_inclusive(min_weight, max_weight);
 
     let logging_points = [n / 2, n, 2 * n, 5 * n, 10 * n];
 
     let mut sum = W::zero();
-    let mut weights: Vec<W> = (0..n).map(|_| {
-        let w = params.initial_weights.generate_weight(&mut rng, max_weight);
-        sum += w;
-        w
-    }).collect();
+    let mut weights: Vec<W> = (0..n)
+        .map(|_| {
+            let w = params.initial_weights.generate_weight(&mut rng, max_weight);
+            sum += w;
+            w
+        })
+        .collect();
 
     for i in 0..=*logging_points.last().unwrap() {
         let edge = edge_sampler.sample(&mut rng);
         let weight = weight_sampler.sample(&mut rng);
-        
+
         let delta = weight - weights[edge];
         if sum + delta >= W::zero() {
             sum += delta;
@@ -344,9 +342,9 @@ pub fn run_cycle_exp<W: Weight>(params: Parameters) {
         }
 
         if logging_points.contains(&i) {
-            weights.iter().for_each(|w| println!(
-                "{},{w}", (i as f64) / (n as f64)
-            ));
+            weights
+                .iter()
+                .for_each(|w| println!("{},{w},{}", (i as f64) / (n as f64), params.initial_weights.to_char()));
         }
     }
 }

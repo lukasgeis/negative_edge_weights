@@ -6,11 +6,11 @@ use std::{
 
 use rand_distr::Uniform;
 
-/// A coordinate in hyperbolic space consists of 
+/// A coordinate in hyperbolic space consists of
 /// - an angle `phi`
 /// - a radius `rad`
 /// - an `id` to identify the coordinate
-/// 
+///
 /// We precompute values such as `sinh(rad), cosh(rad), sin(phi), cos(phi)` as well as the id of
 /// the band in which `rad` lies. Thus we do not need to store `rad`.
 #[derive(Debug, Clone, Copy)]
@@ -61,7 +61,7 @@ pub struct Hyperbolic {
 /// Indicates which edges to include
 #[derive(Debug, Copy, Clone)]
 pub enum EdgeResult {
-    /// For `(u,v)`, include `(u,v)` 
+    /// For `(u,v)`, include `(u,v)`
     Forward,
     /// For `(u,v)`, include `(v,u)`
     Backward,

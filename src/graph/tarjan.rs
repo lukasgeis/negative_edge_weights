@@ -2,7 +2,6 @@ use crate::weight::Weight;
 
 use super::{GraphNeigbors, GraphStats};
 
-
 #[derive(Debug, Copy, Clone)]
 struct NodeState {
     index: usize,
@@ -18,12 +17,13 @@ impl NodeState {
                 index: n,
                 lowlink: n,
                 on_stack: false,
-            }; n
+            };
+            n
         ]
     }
 }
 
-pub fn num_sccs<W: Weight,G: GraphNeigbors<W> + GraphStats>(graph: &G) -> usize {
+pub fn num_sccs<W: Weight, G: GraphNeigbors<W> + GraphStats>(graph: &G) -> usize {
     let mut index = 0usize;
     let mut stack = Vec::new();
 
@@ -37,7 +37,14 @@ pub fn num_sccs<W: Weight,G: GraphNeigbors<W> + GraphStats>(graph: &G) -> usize 
         }
     }
 
-    fn strongconnect<W: Weight,G: GraphNeigbors<W> + GraphStats>(graph: &G, sccs: &mut Vec<Vec<usize>>, states: &mut [NodeState], stack: &mut Vec<usize>, index: &mut usize, v: usize) {
+    fn strongconnect<W: Weight, G: GraphNeigbors<W> + GraphStats>(
+        graph: &G,
+        sccs: &mut Vec<Vec<usize>>,
+        states: &mut [NodeState],
+        stack: &mut Vec<usize>,
+        index: &mut usize,
+        v: usize,
+    ) {
         states[v].index = *index;
         states[v].lowlink = *index;
         *index += 1;
@@ -55,12 +62,12 @@ pub fn num_sccs<W: Weight,G: GraphNeigbors<W> + GraphStats>(graph: &G) -> usize 
         }
 
         if states[v].lowlink == states[v].index {
-            sccs.push(stack.clone());            
+            sccs.push(stack.clone());
             while let Some(w) = stack.pop() {
                 states[w].on_stack = false;
             }
         }
     }
 
-    sccs.len() 
+    sccs.len()
 }

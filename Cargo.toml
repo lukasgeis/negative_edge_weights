@@ -20,4 +20,4 @@ intervals = ["exp"]     # Every 10000 rounds of the MCMC, log time taken, averag
 acceptance = ["exp"]    # Log the acceptance rate over time  
 insertions = ["exp"]    # Log the number of Queue-Insertions of an algorithm 
 apsp = ["exp"]          # Log APSPs over time
-cycle = ["exp"]
+cycle = ["exp"]         # Log the distribution of weights on the simple cycle over time

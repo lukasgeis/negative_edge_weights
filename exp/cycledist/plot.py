@@ -26,6 +26,14 @@ def round_label(row):
 
 data["factor"] = data.apply(round_label, axis=1)
 
+initial = {
+    "m": r"\textsc{Maximum}",
+    "z": r"\textsc{Zero}"
+}
+
+data["initial"].replace(initial, inplace=True)
+
+
 sns.set_theme(style="darkgrid")
 sns.set_palette("colorblind")
 sns.set(font_scale=1.3)
@@ -35,11 +43,14 @@ plot = sns.violinplot(
     data=data,
     x="factor",
     y="weight",
-    inner="quart"
+    inner="quart",
+    hue="initial",
+    split=True,
 )
 
 plot.set(xlabel=r"\textsc{Number of Rounds}")
 plot.set(ylabel=r"\textsc{EdgeWeights}")
+plot.legend(loc='lower left',title=r"\textsc{InitialWeights}")
 
 plt.savefig(
     f"{plot_dir}/cycledist.pdf",
