@@ -57,7 +57,15 @@ where
 
     let mut timer = Instant::now();
     let max_weight = W::from_f64(params.max_weight);
-    let mut graph: G = G::from_source(&params.source, &mut rng, params.initial_weights, max_weight);
+    let mut graph: G = {
+        let graph = G::from_source(&params.source, &mut rng, params.initial_weights, max_weight);
+
+        if params.scc {
+            extract_largest_scc(graph)
+        } else {
+            graph
+        }
+    };
 
     println!(
         "[INFO] Loaded graph with {} nodes and {} edges in {}ms",

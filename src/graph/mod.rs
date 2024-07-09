@@ -148,6 +148,33 @@ pub fn store_graph<W: Weight, G: GraphEdgeList<W>, WB: Write>(
     Ok(())
 }
 
+pub fn extract_subgraph<W: Weight, G: GraphStats + GraphEdgeList<W>>(graph: G, nodes: Vec<Node>) -> G {
+    let n = nodes.len();
+    let mut mapping = vec![n; graph.n()];
+    nodes.into_iter().enumerate().for_each(|(i, u)| mapping[u] = i);
+    
+    let edges: Vec<Edge<W>> = graph.into_edges().into_iter().filter_map(|e| {
+        let u = mapping[e.source];
+        let v = mapping[e.target];
+        let w = e.weight;
+        if u < n && v < n {
+            Some((u, v, w).into())
+        } else {
+            None
+        }
+    }).collect();
+
+    G::from_edges(n, edges)
+}
+
+pub fn extract_largest_scc<W: Weight, G: GraphStats + GraphEdgeList<W> + GraphNeigbors<W>>(graph: G) -> G {
+    let mut sc = StronglyConnected::new(&graph);
+    sc.set_include_singletons(false);
+    let scc = sc.max_by(|a, b| a.len().cmp(&b.len())).expect("No SCC was found!");
+
+    extract_subgraph(graph, scc)
+}
+
 pub trait GraphStats {
     fn n(&self) -> usize;
 
@@ -187,6 +214,8 @@ macro_rules! impl_debug_graph {
 }
 
 pub(crate) use impl_debug_graph;
+
+use self::tarjan::StronglyConnected;
 
 /// Returns an IO-Error with a custom error message.
 #[inline]

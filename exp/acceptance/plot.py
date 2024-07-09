@@ -17,6 +17,14 @@ gnp = pd.read_csv(f"{data_path}/gnp.out")
 rhg = pd.read_csv(f"{data_path}/rhg.out")
 dsf = pd.read_csv(f"{data_path}/dsf.out")
 
+wrong_dsf_degrees = {
+    5.3: 10,
+    10: 20,
+    25: 50,
+}
+
+dsf["degree"].replace(wrong_dsf_degrees, inplace=True)
+
 def filter_out_data_points(row):
     base = math.floor(math.log10(row["round"]))
     step = 10 ** (base - 1)
@@ -126,6 +134,6 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     )
 
 
-prep_and_plot_data(gnp, "gnp")
-prep_and_plot_data(rhg, "rhg")
+#prep_and_plot_data(gnp, "gnp")
+#prep_and_plot_data(rhg, "rhg")
 prep_and_plot_data(dsf, "dsf")

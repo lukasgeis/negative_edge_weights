@@ -74,6 +74,10 @@ struct Parameters {
     /// Enable bidiretional search
     #[structopt(short = "a", long, default_value = "bd")]
     algorithm: Algorithm,
+
+    /// Extract the largest SCC and run the MCMC on it
+    #[structopt(long)]
+    scc: bool,
 }
 
 #[derive(StructOpt, Debug, Clone)]

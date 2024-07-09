@@ -13,7 +13,7 @@ use crate::{
     bidijkstra::Graph as Graph2,
     dijkstra::Graph as Graph1,
     exp::apsp::mean_max_paths,
-    graph::{bellman_ford::Graph as Graph3, tarjan::num_sccs, *},
+    graph::{bellman_ford::Graph as Graph3, *},
     weight::Weight,
     Algorithm, Parameters,
 };
@@ -291,7 +291,15 @@ where
     };
 
     let max_weight = W::from_f64(params.max_weight);
-    let mut graph: G = G::from_source(&params.source, &mut rng, params.initial_weights, max_weight);
+    let mut graph: G = {
+        let graph = G::from_source(&params.source, &mut rng, params.initial_weights, max_weight);
+
+        if params.scc {
+            extract_largest_scc(graph)
+        } else {
+            graph
+        }
+    };
 
     graph.run_exp_mcmc(&mut rng, &params);
 }
