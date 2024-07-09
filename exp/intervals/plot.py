@@ -82,7 +82,7 @@ labels = [title_labels[0]] + type_labels + [title_labels[1]] + labels
 
 plot1.get_legend().remove()
 plot2.get_legend().remove()
-leg = plt.legend(handles, labels, loc="center right", fontsize=13)
+leg = plt.legend(handles, labels, fontsize=13)
 
 for item, label in zip(leg.legend_handles, leg.texts):
     if label._text in title_labels:
@@ -144,7 +144,7 @@ handles = [title_lines[0]] + algo_lines + [title_lines[1]] + handles[:3]
 labels = [title_labels[0]] + algo_labels + [title_labels[1]] + labels[:3]
 
 plot.get_legend().remove()
-leg = plt.legend(handles, labels, loc="center right", fontsize=13)
+leg = plt.legend(handles, labels, fontsize=13)
 
 for item, label in zip(leg.legend_handles, leg.texts):
     if label._text in title_labels:
