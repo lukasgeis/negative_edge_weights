@@ -24,6 +24,13 @@ data = pd.concat([gnp, rhg, dsf])
 data["round"] = data["round"] * 10000
 data["time"] = data["time"] / 10
 
+data = data[
+    data.groupby(
+        ["round", "gen", "algo"]
+    )[
+        ["round", "gen", "algo"]
+    ].transform('size') > 9
+]
 
 sns.set_theme(style="darkgrid")
 sns.set_palette("colorblind")
