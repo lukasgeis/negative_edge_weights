@@ -18,7 +18,7 @@ plot:
 	)
 
 test: clean
-	bash run.sh -n 100 -r 2
+	bash run.sh -n 100 -r 200
 	mkdir -p ${PLOT_DIR}/test
 	( \
 		. ./../../pyenv/bin/activate; \

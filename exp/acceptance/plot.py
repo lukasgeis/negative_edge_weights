@@ -4,6 +4,7 @@ import seaborn as sns
 import pandas as pd
 
 import sys
+import math
 
 if len(sys.argv) > 1:
     plot_dir = "res/test"
@@ -15,6 +16,18 @@ data_path = "../../data/acceptance"
 gnp = pd.read_csv(f"{data_path}/gnp.out")
 rhg = pd.read_csv(f"{data_path}/rhg.out")
 dsf = pd.read_csv(f"{data_path}/dsf.out")
+
+def filter_out_data_points(row):
+    base = math.floor(math.log10(row["round"]))
+    step = 10 ** (base - 1)
+    if row["round"] % step == 0:
+        return True
+    else:
+        return False
+
+gnp = gnp[gnp.apply(filter_out_data_points, axis=1)]
+rhg = rhg[rhg.apply(filter_out_data_points, axis=1)]
+dsf = dsf[dsf.apply(filter_out_data_points, axis=1)]
 
 initials = {
     "m": r"\textsc{Maximum}",
