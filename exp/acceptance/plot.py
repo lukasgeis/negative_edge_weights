@@ -25,6 +25,7 @@ wrong_dsf_degrees = {
 
 dsf["degree"].replace(wrong_dsf_degrees, inplace=True)
 
+"""
 def filter_out_data_points(row):
     base = math.floor(math.log10(row["round"]))
     step = 10 ** (base - 1)
@@ -36,12 +37,19 @@ def filter_out_data_points(row):
 gnp = gnp[gnp.apply(filter_out_data_points, axis=1)]
 rhg = rhg[rhg.apply(filter_out_data_points, axis=1)]
 dsf = dsf[dsf.apply(filter_out_data_points, axis=1)]
+"""
 
 initials = {
     "m": r"\textsc{Maximum}",
     "z": r"\textsc{Zero}",
     "u": r"\textsc{Uniform}"
 }
+
+
+gnp["initial"].replace(initials, inplace=True)
+rhg["initial"].replace(initials, inplace=True)
+dsf["initial"].replace(initials, inplace=True)
+
 
 sns.set_theme(style="darkgrid")
 sns.set_palette("colorblind")
@@ -57,8 +65,6 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
             ["round", "initial", "degree"]
         ].transform('size') > 9
     ]
-
-    data["initial"].replace(initials, inplace=True)
 
     plt.clf()
     plot = sns.lineplot(
@@ -134,6 +140,6 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     )
 
 
-#prep_and_plot_data(gnp, "gnp")
-#prep_and_plot_data(rhg, "rhg")
+prep_and_plot_data(gnp, "gnp")
+prep_and_plot_data(rhg, "rhg")
 prep_and_plot_data(dsf, "dsf")

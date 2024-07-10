@@ -15,8 +15,8 @@ done
 
 HEADER="round,rate,initial,degree"
 
-#echo $HEADER > "$OUTPUT/gnp.out"
-#echo $HEADER > "$OUTPUT/rhg.out"
+echo $HEADER > "$OUTPUT/gnp.out"
+echo $HEADER > "$OUTPUT/rhg.out"
 echo $HEADER > "$OUTPUT/dsf.out"
 
 while getopts n:r: flag
@@ -29,7 +29,7 @@ done
 
 for NUM in {1..10} 
 do
-    : '
+    
     for DEGREE in 10 20 50
     do 
         ROUNDS=$(($ROUNDS_BASE * 50 / $DEGREE))
@@ -42,22 +42,21 @@ do
         done
     
     done
-    '
 
     # Degree 10
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5)) -t f64 -i m dsf -n $(($NODES * 265 / 100)) -d 5.3 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5)) -t f64 -i z dsf -n $(($NODES * 265 / 100)) -d 5.3 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5)) -t f64 -i u dsf -n $(($NODES * 265 / 100)) -d 5.3 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5)) -t f64 -i m --scc dsf -n $(($NODES * 265 / 100)) -d 5.3 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5)) -t f64 -i z --scc dsf -n $(($NODES * 265 / 100)) -d 5.3 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5)) -t f64 -i u --scc dsf -n $(($NODES * 265 / 100)) -d 5.3 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
 
     # Degree 20
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5 / 2)) -t f64 -i m dsf -n $(($NODES * 23 / 10)) -d 10 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5 / 2)) -t f64 -i z dsf -n $(($NODES * 23 / 10)) -d 10 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5 / 2)) -t f64 -i u dsf -n $(($NODES * 23 / 10)) -d 10 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5 / 2)) -t f64 -i m --scc dsf -n $(($NODES * 23 / 10)) -d 10 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5 / 2)) -t f64 -i z --scc dsf -n $(($NODES * 23 / 10)) -d 10 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5 / 2)) -t f64 -i u --scc dsf -n $(($NODES * 23 / 10)) -d 10 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
 
     # Degree 50
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i m dsf -n $(($NODES * 21 / 10)) -d 25 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i z dsf -n $(($NODES * 21 / 10)) -d 25 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i u dsf -n $(($NODES * 21 / 10)) -d 25 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i m --scc dsf -n $(($NODES * 21 / 10)) -d 25 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i z --scc dsf -n $(($NODES * 21 / 10)) -d 25 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i u --scc dsf -n $(($NODES * 21 / 10)) -d 25 >> "$OUTPUT/dsf/m_${DEGREE}_$NUM.out" &
 done
 
 wait

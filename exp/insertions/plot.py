@@ -61,6 +61,6 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     )
 
 
-#prep_and_plot_data(gnp, "gnp")
-#prep_and_plot_data(rhg, "rhg")
+prep_and_plot_data(gnp, "gnp")
+prep_and_plot_data(rhg, "rhg")
 prep_and_plot_data(dsf, "dsf")

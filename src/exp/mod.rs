@@ -137,6 +137,9 @@ where
         #[cfg(feature = "acceptance")]
         let mut avg_accepted_rounds = 0.0f64;
 
+        #[cfg(feature = "acceptance")]
+        let mut current_logging_step = 100u64;
+
         for i in 0..num_rounds {
             #[cfg(feature = "intervals")]
             {
@@ -211,15 +214,19 @@ where
             #[cfg(feature = "acceptance")]
             {
                 avg_accepted_rounds += (num_accepted_rounds as f64 / (i + 1) as f64);
-                if (i + 1) % 1000 == 0 {
+                if (i + 1) % current_logging_step == 0 {
                     println!(
                         "{},{},{},{}",
                         i + 1,
-                        avg_accepted_rounds / 1000.0,
+                        avg_accepted_rounds / current_logging_step as f64,
                         params.initial_weights.to_char(),
                         params.source.degree()
                     );
                     avg_accepted_rounds = 0.0;
+
+                    if (i + 1) % (100 * current_logging_step) == 0 {
+                        current_logging_step *= 10;
+                    }
                 }
             }
         }

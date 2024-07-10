@@ -9,7 +9,7 @@ __plot_dir := $(shell mkdir -p ${PLOT_DIR})
 all: clean run plot
 
 run:
-	bash run.sh -n 10000 -d 10 -r 100
+	bash run.sh -n 10000 -r 100
 
 plot:
 	( \
@@ -18,7 +18,7 @@ plot:
 	)
 
 test: clean
-	bash run.sh -n 1000 -d 10 -r 10
+	bash run.sh -n 1000 -r 10
 	mkdir -p ${PLOT_DIR}/test
 	( \
 		. ./../../pyenv/bin/activate; \
