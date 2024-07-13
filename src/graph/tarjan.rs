@@ -4,7 +4,6 @@ use crate::weight::Weight;
 
 use super::{Edge, GraphNeigbors, GraphStats, Node};
 
-
 /// Implementation of Tarjan's Algorithm for Strongly Connected Components.
 /// It is designed as an iterator that emits the nodes of one strongly connected component at a
 /// time. Observe that the order of nodes within a component is non-deterministic; the order of the
@@ -167,7 +166,6 @@ impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> StronglyConnected<'a, W, G
     }
 }
 
-
 #[derive(Debug, Clone)]
 struct StackFrame<'a, W: Weight, G: GraphStats + GraphNeigbors<W> + 'a> {
     node: Node,
@@ -205,7 +203,6 @@ impl NodeState {
     }
 }
 
-
 impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> Iterator for StronglyConnected<'a, W, G> {
     type Item = Vec<Node>;
 
@@ -221,4 +218,7 @@ impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> Iterator for StronglyConne
     }
 }
 
-impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> FusedIterator for StronglyConnected<'a, W, G> {}
+impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> FusedIterator
+    for StronglyConnected<'a, W, G>
+{
+}

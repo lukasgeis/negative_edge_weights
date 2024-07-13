@@ -4,7 +4,7 @@ PLOT_DIR := res
 __data_dir := $(shell mkdir -p ${DATA_DIR})
 __plot_dir := $(shell mkdir -p ${PLOT_DIR})
 
-.PHONY: all run plot test clean
+.PHONY: all run plot test roads testroads clean
 
 all: clean run plot
 
@@ -25,5 +25,11 @@ test: clean
 		python3 plot.py test; \
 	) 
 	
+roads:
+	bash roads.sh -r 100
+
+testroads:
+	bash roads.sh -r 0.1
+
 clean:
 	rm -r ${DATA_DIR}

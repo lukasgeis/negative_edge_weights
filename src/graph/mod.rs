@@ -148,29 +148,43 @@ pub fn store_graph<W: Weight, G: GraphEdgeList<W>, WB: Write>(
     Ok(())
 }
 
-pub fn extract_subgraph<W: Weight, G: GraphStats + GraphEdgeList<W>>(graph: G, nodes: Vec<Node>) -> G {
+pub fn extract_subgraph<W: Weight, G: GraphStats + GraphEdgeList<W>>(
+    graph: G,
+    nodes: Vec<Node>,
+) -> G {
     let n = nodes.len();
     let mut mapping = vec![n; graph.n()];
-    nodes.into_iter().enumerate().for_each(|(i, u)| mapping[u] = i);
-    
-    let edges: Vec<Edge<W>> = graph.into_edges().into_iter().filter_map(|e| {
-        let u = mapping[e.source];
-        let v = mapping[e.target];
-        let w = e.weight;
-        if u < n && v < n {
-            Some((u, v, w).into())
-        } else {
-            None
-        }
-    }).collect();
+    nodes
+        .into_iter()
+        .enumerate()
+        .for_each(|(i, u)| mapping[u] = i);
+
+    let edges: Vec<Edge<W>> = graph
+        .into_edges()
+        .into_iter()
+        .filter_map(|e| {
+            let u = mapping[e.source];
+            let v = mapping[e.target];
+            let w = e.weight;
+            if u < n && v < n {
+                Some((u, v, w).into())
+            } else {
+                None
+            }
+        })
+        .collect();
 
     G::from_edges(n, edges)
 }
 
-pub fn extract_largest_scc<W: Weight, G: GraphStats + GraphEdgeList<W> + GraphNeigbors<W>>(graph: G) -> G {
+pub fn extract_largest_scc<W: Weight, G: GraphStats + GraphEdgeList<W> + GraphNeigbors<W>>(
+    graph: G,
+) -> G {
     let mut sc = StronglyConnected::new(&graph);
     sc.set_include_singletons(false);
-    let scc = sc.max_by(|a, b| a.len().cmp(&b.len())).expect("No SCC was found!");
+    let scc = sc
+        .max_by(|a, b| a.len().cmp(&b.len()))
+        .expect("No SCC was found!");
 
     extract_subgraph(graph, scc)
 }
@@ -247,7 +261,7 @@ fn read_graph_from_file<R: BufRead>(
             return io_error("Too many edges given");
         }
 
-        let edge: Vec<_> = content.trim().split(' ').collect();
+        let edge: Vec<_> = content.trim().split(',').collect();
         if edge.len() != 2 {
             return io_error(
                 format!(
@@ -259,21 +273,23 @@ fn read_graph_from_file<R: BufRead>(
         }
 
         let u: Node = match edge[0].parse::<Node>() {
-            Ok(u) => u - 1,
+            Ok(u) => u,
             Err(_) => {
                 return io_error(format!("Line {}: Cannot parse first node!", line + 1).as_str())
             }
         };
 
         let v: Node = match edge[1].parse::<Node>() {
-            Ok(v) => v - 1,
+            Ok(v) => v,
             Err(_) => {
                 return io_error(format!("Line {}: Cannot parse second node!", line + 1).as_str())
             }
         };
 
         if u >= n as Node || v >= n as Node {
-            return io_error(format!("Line {}: Node in edge is bigger than n!", line + 1).as_str());
+            return io_error(
+                format!("Line {}: Node {u} in edge is bigger than n={n}!", line + 1).as_str(),
+            );
         }
 
         edges.push((u, v));
