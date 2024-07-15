@@ -29,7 +29,7 @@ roads:
 	bash roads.sh -r 100
 
 testroads:
-	bash roads.sh -r 0.1
+	bash roads.sh -r 1
 
 clean:
 	rm -r ${DATA_DIR}
