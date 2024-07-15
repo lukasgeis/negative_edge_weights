@@ -1,3 +1,4 @@
+use fxhash::FxHashSet;
 use rand_distr::{Distribution, Uniform};
 
 use crate::graph::*;
@@ -18,6 +19,8 @@ pub struct DirectedScaleFree {
     n: usize,
     /// Uniform distrbution in [0,1]
     distr: Uniform<f64>,
+
+    seen_edges: FxHashSet<(Node, Node)>,
 }
 
 impl DirectedScaleFree {
@@ -36,6 +39,7 @@ impl DirectedScaleFree {
             delta_in,
             n,
             distr: Uniform::new(0.0, 1.0),
+            seen_edges: FxHashSet::with_hasher(Default::default())
         }
     }
 }
@@ -114,12 +118,16 @@ impl GraphGenerator for DirectedScaleFree {
                 (u, v)
             };
 
+            if !self.seen_edges.insert((u, v)) {
+                continue;
+            }
+
             out_degrees[u] += 1;
             in_degrees[v] += 1;
 
             edges.push((u, v));
         }
-
+        
         edges
     }
 }

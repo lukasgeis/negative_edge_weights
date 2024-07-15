@@ -58,7 +58,7 @@ plot2 = sns.lineplot(
 
 plt.xscale("log")
 
-plot1.set(xlabel=r"\textsc{Number of Rounds}")
+plot1.set(xlabel=r"\textsc{Number of MCMC Steps}")
 plot1.set(ylabel=r"\textsc{Average Weight}")
 plot2.set(ylabel=r"\textsc{Fraction of}" "\n" r"\textsc{Negative Edges}")
 
@@ -122,8 +122,8 @@ plot = sns.lineplot(
     linestyle="dashed"
 )
 
-plot.set(xlabel=r"\textsc{Number of Rounds}")
-plot.set(ylabel=r"\textsc{Time per}" "\n" r"\textsc{Round in} $\mu s$")
+plot.set(xlabel=r"\textsc{Number of MCMC Steps}")
+plot.set(ylabel=r"\textsc{Time per}" "\n" r"\textsc{MCMC Step in} $\mu s$")
 
 handles, labels = plot.get_legend_handles_labels()
 

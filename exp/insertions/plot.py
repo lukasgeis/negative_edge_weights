@@ -21,6 +21,8 @@ algorithms = {
     "d": r"\textsc{Dijkstra}"
 }
 
+order = [algorithms["bf"], algorithms["d"], algorithms["bd"]]
+
 acceptance = {
     "acc": r"\textsc{Accepted}",
     "rej": r"\textsc{Rejected}",
@@ -28,8 +30,7 @@ acceptance = {
 
 
 sns.set_theme(style="darkgrid")
-sns.set_palette("colorblind")
-sns.set(font_scale=1.3)
+sns.color_palette("colorblind")
 plt.rcParams["text.usetex"] = True
 
 
@@ -43,6 +44,7 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
         x="algo",
         y="insertions",
         hue="acc",
+        order=order,
     )
 
     plot.set(xlabel=None)
@@ -51,8 +53,6 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     plt.yscale("log")
 
     plot.get_legend().set_title("")
-
-    sns.move_legend(plot, "upper left")
 
     plt.savefig(
         f"{plot_dir}/{file_name}.pdf",
