@@ -15,12 +15,14 @@ data_path = "../../data/intervals"
 gnp = pd.read_csv(f"{data_path}/gnp.out")
 rhg = pd.read_csv(f"{data_path}/rhg.out")
 dsf = pd.read_csv(f"{data_path}/dsf.out")
+roa = pd.read_csv(f"{data_path}/roads.out")
 
 gnp["gen"] = r"\textsc{Gnp}"
 rhg["gen"] = r"\textsc{Rhg}"
 dsf["gen"] = r"\textsc{Dsf}"
+roa["gen"] = r"\textsc{Roads}"
 
-data = pd.concat([gnp, rhg, dsf])
+data = pd.concat([gnp, rhg, dsf, roa])
 data["round"] = data["round"] * 10000
 data["time"] = data["time"] / 10
 
@@ -124,6 +126,8 @@ plot = sns.lineplot(
 
 plot.set(xlabel=r"\textsc{Number of MCMC Steps}")
 plot.set(ylabel=r"\textsc{Time per}" "\n" r"\textsc{MCMC Step in} $\mu s$")
+
+plt.xscale("log")
 
 handles, labels = plot.get_legend_handles_labels()
 

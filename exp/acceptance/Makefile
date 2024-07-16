@@ -29,3 +29,10 @@ roads:
 testroads:
 	bash roads.sh -r 0.1
 
+plotroads:
+	( \
+		. ./../../pyenv/bin/activate; \
+		python3 plot_roads.py; \
+	)
+
+

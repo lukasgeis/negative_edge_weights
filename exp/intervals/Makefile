@@ -24,7 +24,7 @@ test:
 	) 
 	
 roads:
-	bash roads.sh -r 100
+	bash roads.sh -r 200
 
 testroads:
 	bash roads.sh -r 1
