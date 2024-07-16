@@ -40,8 +40,8 @@ do
 
     # Fix Degree 10
     ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bd --scc dsf -n $(($NODES * 25 / 10)) -d 6 >> "$OUTPUT/dsf/bd_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d --scc dsf -n $(($NODES * 25 / 10)) -d 6 >> "$OUTPUT/dsf/bd_$NUM.out" &
-    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bf --scc dsf -n $(($NODES * 25 / 10)) -d 6 >> "$OUTPUT/dsf/bd_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a d --scc dsf -n $(($NODES * 25 / 10)) -d 6 >> "$OUTPUT/dsf/d_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS -t f64 -a bf --scc dsf -n $(($NODES * 25 / 10)) -d 6 >> "$OUTPUT/dsf/bf_$NUM.out" &
 done
 
 wait
