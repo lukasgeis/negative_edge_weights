@@ -128,6 +128,7 @@ plot.set(xlabel=r"\textsc{Number of MCMC Steps}")
 plot.set(ylabel=r"\textsc{Time per}" "\n" r"\textsc{MCMC Step in} $\mu s$")
 
 plt.xscale("log")
+plt.yscale("log")
 
 handles, labels = plot.get_legend_handles_labels()
 

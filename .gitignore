@@ -2,7 +2,7 @@ target
 *.gr
 *.svg
 *perf*
-data
+data*
 pyenv/
 test/
 *log
