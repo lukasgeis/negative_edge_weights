@@ -6,6 +6,12 @@ Make sure that Rust is installed. The default way to acchieve this by running
 the [one-liner from hell](https://www.rust-lang.org/tools/install).
 You most certainly do not want to use your system's package manager to install Rust.
 
+You also need the unstable nightly channel to run this application:
+```bash
+rustup toolchain install nightly
+rustup default nightly
+```
+
 After that navigate to this directory and run:
 
 ```bash
@@ -28,15 +34,17 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -W <max-weight>              [default: 1]
-    -w <min-weight>              [default: -1]
+    -W <max-weight>             Minimum Weight [Default: 1]
+    -w <min-weight>             Maximum Weight [Default: -1]
     -o <output>                 Optional Output Path
     -r <rounds-per-edge>        Carry out m * rounds_per_edge MCMC update steps [default: 1]
     -t <type>                   The primitive type of edge weights: can be any signed integer or float [default: f64]
-    --bidir                     Use a bidirectional search instead of the normal dijkstra one 
+    -s <seed>                   Optional starting seed for the RNG
+    -i                          InitialWeights: Maximum (m), Uniform (u), zero (z) [Default: m]
+    -a <algorithm>              Specify the algorithm used (BiDijktra: bd, Dijkstra: d, BellmanFord: bf) [Default: bd]
+    --scc                       Extract the largest SCC and run the MCMC on it instead
     --check                     Run additional NegativeCycleDetector checks before and after the MCMC 
-    --bftest                    Cross-Check decisions by dijkstra with the naive version using Bellman-Ford
-    -s <seed>                   Optional starting seed for the RNG 
+
 
 SUBCOMMANDS:
     gnp    
@@ -44,6 +52,7 @@ SUBCOMMANDS:
     rhg
     complete
     cycle
+    file
     help    Prints this message or the help of the given subcommand(s)
 ```
 
@@ -71,3 +80,40 @@ When specifying negative values please use `-w=-10` instead of `-w -10` to allow
 
 
 
+## Experiments
+All experiments and plots are implemented as features and can be accessed in the `exp` folder.
+There are the following experiments:
+- `acceptance`: Log the AcceptanceRate of the MCMC over time for different graph models
+- `insertions`: Log the number of Queue-Insertions of different algorithms for different graph models
+- `intervals`: Log average runtime, average weight and fraction of negative edges over time for different graph models
+- `cycledist`: Log the weight distribution on the simply cycle over time
+
+An experiment can be executed via
+```bash
+make run -C [NAME]
+```
+and plotted via
+```bash
+make plot -C [NAME]
+```
+If you want a small test sample (and plot) on your machine, use
+```bash
+make test -C [NAME]
+```
+
+All experiments can instead also be executed in succession via
+```bash
+bash exp/run.sh
+```
+or tested via
+```bash
+bash exp/test.sh 
+```
+
+Note that before plotting you need to setup a Python-Environment via
+```bash
+bash exp/pyprep.sh
+```
+
+### Warning
+All experiments and plotting might take a few days depending on your machine (some but not all are parallelized)

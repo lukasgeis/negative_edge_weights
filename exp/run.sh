@@ -9,7 +9,7 @@ done
 
 for EXP in "acceptance" "cycledist" "insertions" "intervals"
 do
-    make run -C $EXP &
+    make plot -C $EXP &
 done
 
 wait

@@ -15,14 +15,14 @@ data_path = "../../data/intervals"
 gnp = pd.read_csv(f"{data_path}/gnp.out")
 rhg = pd.read_csv(f"{data_path}/rhg.out")
 dsf = pd.read_csv(f"{data_path}/dsf.out")
-roa = pd.read_csv(f"{data_path}/roads.out")
+roads = pd.read_csv(f"{data_path}/roads.out")
 
 gnp["gen"] = r"$\mathcal{GNP}$"
 rhg["gen"] = r"$\mathcal{RHG}$"
 dsf["gen"] = r"$\mathcal{DSF}$"
-roa["gen"] = r"$\mathcal{ROAD}$"
+roads["gen"] = r"$\mathcal{ROAD}$"
 
-data = pd.concat([gnp, rhg, dsf, roa])
+data = pd.concat([gnp, rhg, dsf, roads])
 data["round"] = data["round"] * 10000
 data["time"] = data["time"] / 10
 

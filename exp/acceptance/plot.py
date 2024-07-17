@@ -15,6 +15,7 @@ data_path = "../../data/acceptance"
 gnp = pd.read_csv(f"{data_path}/gnp.out")
 rhg = pd.read_csv(f"{data_path}/rhg.out")
 dsf = pd.read_csv(f"{data_path}/dsf.out")
+roads = pd.read_csv(f"{data_path}/roads.out")
 
 wrong_dsf_degrees = {
     6: 10,
@@ -34,7 +35,7 @@ initials = {
 gnp["initial"].replace(initials, inplace=True)
 rhg["initial"].replace(initials, inplace=True)
 dsf["initial"].replace(initials, inplace=True)
-
+roads["initial"].replace(initials, inplace=True)
 
 sns.set_theme(style="darkgrid")
 sns.set_palette("colorblind")
@@ -128,3 +129,24 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
 prep_and_plot_data(gnp, "gnp")
 prep_and_plot_data(rhg, "rhg")
 prep_and_plot_data(dsf, "dsf")
+
+# Roads
+plt.clf()
+plot = sns.lineplot(
+    data=roads,
+    x="round",
+    y="rate",
+    hue="initial"
+)
+
+plot.set(xlabel=r"\textsc{MCMC Steps}")
+plot.set(ylabel=r"\textsc{Acceptance Rate}")
+plot.get_legend().set_title(r"\textsc{InitialWeights}")
+
+plt.xscale("log")
+
+plt.savefig(
+    f"{plot_dir}/roads.pdf",
+    format="pdf",
+    bbox_inches="tight"
+)

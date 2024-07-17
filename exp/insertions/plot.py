@@ -14,7 +14,7 @@ data_path = "../../data/insertions"
 gnp = pd.read_csv(f"{data_path}/gnp.out")
 rhg = pd.read_csv(f"{data_path}/rhg.out")
 dsf = pd.read_csv(f"{data_path}/dsf.out")
-roa = pd.read_csv(f"{data_path}/roads.out")
+roads = pd.read_csv(f"{data_path}/roads.out")
 
 algorithms = {
     "bf": r"\textsc{BellmanFord}",
@@ -65,4 +65,4 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
 prep_and_plot_data(gnp, "gnp")
 prep_and_plot_data(rhg, "rhg")
 prep_and_plot_data(dsf, "dsf")
-prep_and_plot_data(roa, "roads")
+prep_and_plot_data(roads, "roads")

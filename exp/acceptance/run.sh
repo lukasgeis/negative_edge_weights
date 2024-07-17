@@ -7,7 +7,7 @@ OUTPUT="data/acceptance"
 
 mkdir -p $OUTPUT
 
-for GEN in "gnp" "rhg" "dsf"
+for GEN in "gnp" "rhg" "dsf" "roads"
 do
     mkdir -p "$OUTPUT/$GEN"     
 done
@@ -15,9 +15,10 @@ done
 
 HEADER="round,rate,initial,degree"
 
-#echo $HEADER > "$OUTPUT/gnp.out"
-#echo $HEADER > "$OUTPUT/rhg.out"
+echo $HEADER > "$OUTPUT/gnp.out"
+echo $HEADER > "$OUTPUT/rhg.out"
 echo $HEADER > "$OUTPUT/dsf.out"
+echo $HEADER > "$OUTPUT/roads.out"
 
 while getopts n:r: flag
 do
@@ -29,8 +30,6 @@ done
 
 for NUM in {1..10} 
 do
-    
-    : '
     for DEGREE in 10 20 50
     do 
         ROUNDS=$(($ROUNDS_BASE * 50 / $DEGREE))
@@ -43,7 +42,6 @@ do
         done
     
     done
-    '
 
     # Degree 10
     ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS_BASE * 5)) -t f64 -i m --scc dsf -n $(($NODES * 25 / 10)) -d 6 >> "$OUTPUT/dsf/m_10_$NUM.out" &
@@ -59,14 +57,17 @@ do
     ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i m --scc dsf -n $(($NODES * 17 / 10)) -d 47 >> "$OUTPUT/dsf/m_50_$NUM.out" &
     ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i z --scc dsf -n $(($NODES * 17 / 10)) -d 47 >> "$OUTPUT/dsf/u_50_$NUM.out" &
     ./target/release/random_negative_weights -w=-100 -W 100 -r $ROUNDS_BASE -t f64 -i u --scc dsf -n $(($NODES * 17 / 10)) -d 47 >> "$OUTPUT/dsf/z_50_$NUM.out" &
+
+    # Luxembourg Contracted
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS * 5)) -t f64 -i m file -p "exp/roads_data/luxembourg-contracted.edges" >> "$OUTPUT/roads/m_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS * 5)) -t f64 -i u file -p "exp/roads_data/luxembourg-contracted.edges" >> "$OUTPUT/roads/u_$NUM.out" &
+    ./target/release/random_negative_weights -w=-100 -W 100 -r $(($ROUNDS * 5)) -t f64 -i z file -p "exp/roads_data/luxembourg-contracted.edges" >> "$OUTPUT/roads/z_$NUM.out" &
 done
 
 wait
 
-cat $OUTPUT/dsf/* >> "$OUTPUT/dsf.out"
-
-for GEN in "gnp" "rhg" "dsf"
+for GEN in "gnp" "rhg" "dsf" "roads"
 do
-#    cat $OUTPUT/${GEN}/* >> "$OUTPUT/$GEN.out"
+    cat $OUTPUT/${GEN}/* >> "$OUTPUT/$GEN.out"
     rm -r "$OUTPUT/$GEN"
 done
