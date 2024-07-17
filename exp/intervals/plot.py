@@ -17,10 +17,10 @@ rhg = pd.read_csv(f"{data_path}/rhg.out")
 dsf = pd.read_csv(f"{data_path}/dsf.out")
 roa = pd.read_csv(f"{data_path}/roads.out")
 
-gnp["gen"] = r"\textsc{Gnp}"
-rhg["gen"] = r"\textsc{Rhg}"
-dsf["gen"] = r"\textsc{Dsf}"
-roa["gen"] = r"\textsc{Roads}"
+gnp["gen"] = r"$\mathcal{GNP}$"
+rhg["gen"] = r"$\mathcal{RHG}$"
+dsf["gen"] = r"$\mathcal{DSF}$"
+roa["gen"] = r"$\mathcal{ROAD}$"
 
 data = pd.concat([gnp, rhg, dsf, roa])
 data["round"] = data["round"] * 10000
@@ -151,8 +151,8 @@ title_lines = [
     Line2D([], [], color="none", label=title_labels[1])
 ]
 
-handles = [title_lines[0]] + algo_lines + [title_lines[1]] + handles[:3]
-labels = [title_labels[0]] + algo_labels + [title_labels[1]] + labels[:3]
+handles = [title_lines[0]] + algo_lines + [title_lines[1]] + handles[:4]
+labels = [title_labels[0]] + algo_labels + [title_labels[1]] + labels[:4]
 
 plot.get_legend().remove()
 leg = plt.legend(handles, labels, fontsize=13)
