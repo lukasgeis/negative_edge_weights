@@ -41,6 +41,7 @@ sns.set_theme(style="darkgrid")
 sns.set_palette("colorblind")
 sns.set(font_scale=1.3)
 plt.rcParams["text.usetex"] = True
+plt.rcParams["figure.figsize"] = 6.4, 3.5
 
 
 def prep_and_plot_data(data: pd.DataFrame, file_name: str):
@@ -109,7 +110,7 @@ def prep_and_plot_data(data: pd.DataFrame, file_name: str):
     handles = [title_lines[0]] + degree_lines + [title_lines[1]] + handles
     labels = [degree_title] + degree_labels + [weight_title] + labels
 
-    leg = plt.legend(handles, labels, fontsize=13)
+    leg = plt.legend(handles, labels, ncols=2, fontsize=13)
 
     for item, label in zip(leg.legend_handles, leg.texts):
         if label._text in [degree_title, weight_title]:
@@ -141,7 +142,7 @@ plot = sns.lineplot(
 
 plot.set(xlabel=r"\textsc{MCMC Steps}")
 plot.set(ylabel=r"\textsc{Acceptance Rate}")
-plot.get_legend().set_title(r"\textsc{InitialWeights}")
+plot.get_legend().set_title(r"\textsc{Initial Weights}")
 
 plt.xscale("log")
 

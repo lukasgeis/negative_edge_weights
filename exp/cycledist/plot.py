@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import seaborn as sns
 import pandas as pd
 
@@ -14,6 +13,7 @@ data_path = "../../data/cycledist"
 
 data = pd.read_csv(f"{data_path}/data.out")
 
+
 def round_label(row):
     factor = int(row["round"])
     if factor == 0:
@@ -23,6 +23,7 @@ def round_label(row):
     else:
         label = r"${{{fac}}}n$".format(fac=str(factor))
     return label
+
 
 data["factor"] = data.apply(round_label, axis=1)
 
@@ -38,6 +39,7 @@ sns.set_theme(style="darkgrid")
 sns.set_palette("colorblind")
 sns.set(font_scale=1.3)
 plt.rcParams["text.usetex"] = True
+plt.rcParams["figure.figsize"] = 6.4, 3.5
 
 plot = sns.violinplot(
     data=data,
@@ -50,7 +52,7 @@ plot = sns.violinplot(
 
 plot.set(xlabel=r"\textsc{Number of Rounds}")
 plot.set(ylabel=r"\textsc{EdgeWeights}")
-plot.legend(loc='lower left',title=r"\textsc{InitialWeights}")
+plot.legend(loc='lower left', title=r"\textsc{Initial Weights}")
 
 plt.savefig(
     f"{plot_dir}/cycledist.pdf",

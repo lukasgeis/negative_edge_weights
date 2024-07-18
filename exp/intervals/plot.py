@@ -38,7 +38,7 @@ sns.set_theme(style="darkgrid")
 sns.set_palette("colorblind")
 sns.set(font_scale=1.3)
 plt.rcParams["text.usetex"] = True
-
+plt.rcParams["figure.figsize"] = 6.4, 3.7
 
 # Plot Average Weight and Fraction Negative Edges
 plt.clf()
@@ -107,6 +107,8 @@ plt.savefig(
     bbox_inches="tight"
 )
 
+dummy_label = ""
+dummy_line = Line2D([], [], color="none", label=dummy_label)
 
 # Plot Time
 plt.clf()

@@ -33,6 +33,7 @@ acceptance = {
 sns.set_theme(style="darkgrid")
 sns.color_palette("colorblind")
 plt.rcParams["text.usetex"] = True
+plt.rcParams["figure.figsize"] = 6.4, 3
 
 
 def prep_and_plot_data(data: pd.DataFrame, file_name: str):
