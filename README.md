@@ -117,3 +117,6 @@ bash exp/pyprep.sh
 
 ### Warning
 All experiments and plotting might take a few days depending on your machine (some but not all are parallelized)
+
+#### Note
+The code base will be restructured for the final version of the paper.
