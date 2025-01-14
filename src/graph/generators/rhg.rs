@@ -1,4 +1,4 @@
-use crate::graph::*;
+use super::*;
 use std::{
     f64::consts::{PI, TAU},
     vec,
@@ -161,7 +161,8 @@ fn sample_coordinates(
     alpha: f64,
     band_limits: &[f64],
 ) -> (Vec<Coord>, Vec<usize>) {
-    let min = 1.0_f64.next_up();
+    // Stable version of `1.0_f64.next_up()`
+    let min = 1.0000000000000002;
     let max = (alpha * disk_rad).cosh();
     let mut band_sizes = vec![0; band_limits.len()];
     (

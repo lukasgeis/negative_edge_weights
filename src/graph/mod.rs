@@ -1,29 +1,34 @@
-use std::{
-    fmt::Debug,
-    fs::File,
-    io::{BufRead, BufReader, Error, ErrorKind, Write},
-};
+use std::io::Write;
 
-use rand::Rng;
+use crate::weight::Weight;
 
-use crate::{weight::Weight, InitialWeights, Source};
-
-pub mod bellman_ford;
-mod generators;
+pub mod generators;
+pub mod neg_cycle;
 pub mod tarjan;
 
-pub use generators::*;
-
-/// Node of a graph
+/// Node of a Graph
 pub type Node = usize;
 
-/// A weighted directed edge consists of a `source`, `target`, and `weight`
+/// A weighted directed edge
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Edge<W: Weight> {
     pub source: Node,
     pub target: Node,
     pub weight: W,
 }
+
+impl<W: Weight> Default for Edge<W> {
+    fn default() -> Self {
+        Self {
+            source: 0,
+            target: 0,
+            weight: W::zero(),
+        }
+    }
+}
+
+unsafe impl<W: Weight> Send for Edge<W> {}
+unsafe impl<W: Weight> Sync for Edge<W> {}
 
 impl<W: Weight> Eq for Edge<W> {}
 
@@ -59,322 +64,184 @@ impl<W: Weight> From<Edge<W>> for (Node, Node, W) {
     }
 }
 
-pub trait GraphEdgeList<W: Weight> {
-    fn from_edges(n: usize, edges: Vec<Edge<W>>) -> Self;
-
-    fn into_edges(self) -> Vec<Edge<W>>;
+/// Graph representation for the MCMC supporting potentials and bidirectional edges
+#[derive(Debug, Clone)]
+pub struct Graph<W: Weight> {
+    /// Edges sorted by source node
+    pub edges: Vec<Edge<W>>,
+    /// `limits[u]` is the first edge in `edges` with source node `u`
+    limits: Vec<usize>,
+    /// Edges sorted by target node
+    rev_edges: Vec<Edge<W>>,
+    /// `rev_limits[u]` is the first edge in `rev_edges` with target node `u`
+    rev_limits: Vec<usize>,
+    /// Potentials of all nodes
+    potentials: Vec<W>,
 }
 
-pub trait GraphFromSource<W: Weight> {
-    fn from_source<R: Rng>(
-        source: &Source,
-        rng: &mut R,
-        default_weight: InitialWeights,
-        max_weight: W,
-    ) -> Self;
-}
-
-impl<W: Weight, G: GraphEdgeList<W>> GraphFromSource<W> for G {
-    fn from_source<R: Rng>(
-        source: &Source,
-        rng: &mut R,
-        default_weight: InitialWeights,
-        max_weight: W,
-    ) -> Self {
-        let (n, edges) = match *source {
-            Source::Gnp { nodes, avg_deg } => {
-                assert!(nodes > 1 && avg_deg > 0.0);
-                let prob = avg_deg / (nodes as f64);
-                (nodes, Gnp::new(nodes, prob).generate(rng))
-            }
-            Source::Dsf {
-                nodes,
-                alpha,
-                beta,
-                gamma,
-                avg_deg,
-                delta_out,
-                delta_in,
-            } => {
-                let (alpha, beta) = compute_dsf_params(alpha, beta, gamma, avg_deg);
-
-                (
-                    nodes,
-                    DirectedScaleFree::new(nodes, alpha, beta, delta_out, delta_in).generate(rng),
-                )
-            }
-            Source::Rhg {
-                nodes,
-                alpha,
-                radius,
-                avg_deg,
-                num_bands,
-                prob,
-            } => (
-                nodes,
-                Hyperbolic::new(nodes, alpha, radius, avg_deg, num_bands, prob).generate(rng),
-            ),
-            Source::Complete { nodes, loops } => (nodes, Complete::new(nodes, loops).generate(rng)),
-            Source::Cycle { nodes } => (nodes, Cycle::new(nodes).generate(rng)),
-            Source::File {
-                ref path,
-                undirected,
-            } => {
-                let file = File::open(path).expect("Could not open file!");
-                let reader = BufReader::new(file);
-                read_graph_from_file(reader, undirected).unwrap()
-            }
-        };
-
-        Self::from_edges(
-            n,
-            edges
-                .into_iter()
-                .map(|(u, v)| (u, v, default_weight.generate_weight(rng, max_weight)).into())
-                .collect(),
-        )
+impl<W: Weight> Graph<W> {
+    /// Number of nodes
+    #[inline]
+    pub fn n(&self) -> usize {
+        self.potentials.len()
     }
-}
 
-/// Write the graph into an output
-#[inline]
-pub fn store_graph<W: Weight, G: GraphEdgeList<W>, WB: Write>(
-    graph: G,
-    writer: &mut WB,
-) -> std::io::Result<()> {
-    for edge in graph.into_edges() {
-        writeln!(writer, "{},{},{}", edge.source, edge.target, edge.weight)?
+    /// Number of edges
+    #[inline]
+    pub fn m(&self) -> usize {
+        self.edges.len()
     }
-    Ok(())
-}
 
-pub fn extract_subgraph<W: Weight, G: GraphStats + GraphEdgeList<W>>(
-    graph: G,
-    nodes: Vec<Node>,
-) -> G {
-    let n = nodes.len();
-    let mut mapping = vec![n; graph.n()];
-    nodes
-        .into_iter()
-        .enumerate()
-        .for_each(|(i, u)| mapping[u] = i);
+    /// Edge at index `idx`
+    #[inline]
+    pub fn edge(&self, idx: usize) -> Edge<W> {
+        self.edges[idx]
+    }
 
-    let edges: Vec<Edge<W>> = graph
-        .into_edges()
-        .into_iter()
-        .filter_map(|e| {
-            let u = mapping[e.source];
-            let v = mapping[e.target];
-            let w = e.weight;
-            if u < n && v < n {
-                Some((u, v, w).into())
-            } else {
-                None
+    /// Edge at index `idx` in reversed edges
+    #[inline]
+    pub fn rev_edge(&self, idx: usize) -> Edge<W> {
+        self.rev_edges[idx]
+    }
+
+    /// Outgoging edges of node
+    #[inline]
+    pub fn out_neighbors(&self, u: Node) -> &[Edge<W>] {
+        &self.edges[self.limits[u]..self.limits[u + 1]]
+    }
+
+    /// Incoming edges into node
+    #[inline]
+    pub fn in_neighbors(&self, u: Node) -> &[Edge<W>] {
+        &self.rev_edges[self.rev_limits[u]..self.rev_limits[u + 1]]
+    }
+
+    /// Potential weight of an edge
+    #[inline]
+    pub fn pot_weight(&self, edge: Edge<W>) -> W {
+        edge.weight + self.potentials[edge.target] - self.potentials[edge.source]
+    }
+
+    /// Update potential of a node
+    #[inline]
+    pub fn update_pot(&mut self, u: Node, delta: W) {
+        self.potentials[u] += delta;
+    }
+
+    /// Update weight of an edge
+    #[inline]
+    pub fn update_weight(&mut self, idx: usize, weight: W) {
+        let (u, v, w) = self.edges[idx].into();
+        self.edges[idx].weight = weight;
+
+        for i in self.rev_limits[v]..self.rev_limits[v + 1] {
+            if self.rev_edges[i].source == u && self.rev_edges[i].weight == w {
+                self.rev_edges[i].weight = weight;
+                break;
             }
-        })
-        .collect();
+        }
+    }
 
-    G::from_edges(n, edges)
-}
+    /// Update weight of an edge with no known index
+    #[inline]
+    pub fn update_edge_weight(&mut self, u: Node, v: usize, weight: W) {
+        for i in self.limits[u]..self.limits[u + 1] {
+            if self.edges[i].target == v {
+                self.edges[i].weight = weight;
+                break;
+            }
+        }
 
-pub fn extract_largest_scc<W: Weight, G: GraphStats + GraphEdgeList<W> + GraphNeigbors<W>>(
-    graph: G,
-) -> G {
-    let mut sc = StronglyConnected::new(&graph);
-    sc.set_include_singletons(false);
-    let scc = sc
-        .max_by(|a, b| a.len().cmp(&b.len()))
-        .expect("No SCC was found!");
+        for i in self.rev_limits[v]..self.rev_limits[v + 1] {
+            if self.rev_edges[i].source == u {
+                self.rev_edges[i].weight = weight;
+                break;
+            }
+        }
+    }
 
-    extract_subgraph(graph, scc)
-}
+    /// Total weight of edges
+    #[inline]
+    pub fn total_weight(&self) -> W {
+        self.edges.iter().map(|e| e.weight).sum()
+    }
 
-pub trait GraphStats {
-    fn n(&self) -> usize;
+    /// Average weight of edges
+    #[inline]
+    pub fn avg_weight(&self) -> f64 {
+        self.total_weight().to_f64() / self.m() as f64
+    }
 
-    fn m(&self) -> usize;
+    /// Average potential
+    #[inline]
+    pub fn avg_pot(&self) -> f64 {
+        self.potentials.iter().copied().sum::<W>().to_f64() / self.n() as f64
+    }
 
-    fn avg_weight(&self) -> f64;
+    /// Fraction of negative edges
+    #[inline]
+    pub fn frac_neg_edges(&self) -> f64 {
+        self.edges.iter().filter(|e| e.weight < W::zero()).count() as f64 / self.m() as f64
+    }
 
-    fn frac_negative_edges(&self) -> f64;
-}
+    /// Consume graph into edge vector
+    #[inline]
+    pub fn into_edges(self) -> Vec<Edge<W>> {
+        self.edges
+    }
 
-pub trait GraphNeigbors<W: Weight> {
-    fn out_neighbors(&self, u: Node) -> &[Edge<W>];
-}
+    /// Create graph from vector of positive weighted edges
+    pub fn from_pos_edges(n: usize, mut edges: Vec<Edge<W>>) -> Self {
+        assert!(edges.len() > 1);
 
-macro_rules! impl_debug_graph {
-    ($id:ident) => {
-        impl<W: Weight> Debug for $id<W> {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                writeln!(f, "\n<== Graph with {} nodes and {} edges ==>\n\nEdge = (source, target, weight, potential weight)", self.n(), self.m())?;
-                for u in 0..self.n() {
-                    write!(f, "Outgoing edges from {u} => ")?;
-                    for edge in self.out_neighbors(u) {
-                        write!(
-                            f,
-                            "  ({u}, {}, {}, {})",
-                            edge.target,
-                            edge.weight,
-                            self.potential_weight(*edge)
-                        )?;
-                    }
-                    writeln!(f)?;
+        edges.sort_unstable();
+
+        let mut curr_edge: usize = 0;
+        let limits: Vec<usize> = (0..n)
+            .map(|i| {
+                while curr_edge < edges.len() && edges[curr_edge].source < i {
+                    curr_edge += 1;
                 }
-                Ok(())
-            }
-        }
-    };
-}
+                curr_edge
+            })
+            .chain(std::iter::once(edges.len()))
+            .collect();
 
-pub(crate) use impl_debug_graph;
+        let (rev_edges, rev_limits) = {
+            let mut rev_edges = edges.clone();
+            rev_edges
+                .sort_unstable_by(|e1, e2| (e1.target, e1.source).cmp(&(e2.target, e2.source)));
 
-use self::tarjan::StronglyConnected;
+            curr_edge = 0;
+            let rev_limits: Vec<usize> = (0..n)
+                .map(|i| {
+                    while curr_edge < rev_edges.len() && rev_edges[curr_edge].target < i {
+                        curr_edge += 1;
+                    }
+                    curr_edge
+                })
+                .chain(std::iter::once(rev_edges.len()))
+                .collect();
 
-/// Returns an IO-Error with a custom error message.
-#[inline]
-fn io_error<O>(msg: &str) -> Result<O, Error> {
-    Err(Error::new(ErrorKind::Other, msg))
-}
-
-/// Reads a graph from file
-fn read_graph_from_file<R: BufRead>(
-    reader: R,
-    undirected: bool,
-) -> Result<(usize, Vec<(Node, Node)>), Error> {
-    let mut lines = reader.lines().filter_map(|x| -> Option<String> {
-        if let Ok(line) = x {
-            if !line.starts_with('%') {
-                return Some(line);
-            }
-        }
-        None
-    });
-
-    let (n, m) = parse_header(&mut lines)?;
-
-    let cap = m * (undirected as usize + 1);
-    let mut edges = Vec::with_capacity(cap);
-
-    for (line, content) in lines.enumerate() {
-        if line >= m {
-            return io_error("Too many edges given");
-        }
-
-        let edge: Vec<_> = content.trim().split(',').collect();
-        if edge.len() != 2 {
-            return io_error(
-                format!(
-                    "Line {}: An edge should consist of exactly 2 nodes!",
-                    line + 1
-                )
-                .as_str(),
-            );
-        }
-
-        let u: Node = match edge[0].parse::<Node>() {
-            Ok(u) => u,
-            Err(_) => {
-                return io_error(format!("Line {}: Cannot parse first node!", line + 1).as_str())
-            }
+            (rev_edges, rev_limits)
         };
 
-        let v: Node = match edge[1].parse::<Node>() {
-            Ok(v) => v,
-            Err(_) => {
-                return io_error(format!("Line {}: Cannot parse second node!", line + 1).as_str())
-            }
-        };
-
-        if u >= n as Node || v >= n as Node {
-            return io_error(
-                format!("Line {}: Node {u} in edge is bigger than n={n}!", line + 1).as_str(),
-            );
-        }
-
-        edges.push((u, v));
-        if undirected {
-            edges.push((v, u));
+        Self {
+            edges,
+            limits,
+            rev_edges,
+            rev_limits,
+            potentials: vec![W::zero(); n],
         }
     }
 
-    Ok((n, edges))
-}
-
-/// Parses the header of a graph file and returns (name, n, m) or an IO-Error.
-#[inline]
-fn parse_header<I: Iterator<Item = String>>(lines: &mut I) -> Result<(usize, usize), Error> {
-    if let Some(header) = lines.next() {
-        let fields: Vec<_> = header.split(' ').collect();
-        if fields.len() < 3 {
-            return io_error("Expected at least 3 header fields");
+    /// Write the graph to an output
+    #[inline]
+    pub fn store<WB: Write>(&self, writer: &mut WB) -> std::io::Result<()> {
+        writeln!(writer, "p {} {}", self.n(), self.m())?;
+        for edge in &self.edges {
+            writeln!(writer, "{},{},{}", edge.source, edge.target, edge.weight)?
         }
-
-        let n: usize = match fields[1].parse() {
-            Ok(n) => n,
-            Err(_) => return io_error("Cannot parse number of nodes"),
-        };
-
-        let m: usize = match fields[2].parse() {
-            Ok(m) => m,
-            Err(_) => return io_error("Cannot parse number of edges"),
-        };
-
-        Ok((n, m))
-    } else {
-        io_error("Cannot read header")
+        Ok(())
     }
-}
-
-#[cfg(test)]
-pub(crate) mod test_graph_data {
-    use super::*;
-
-    /// A graph with `5` nodes and `10` edges
-    ///
-    /// Image: `https://dreampuf.github.io/GraphvizOnline/#digraph%20G%20%7Bv0%20-%3E%20%7Bv1%2C%20v2%7D%3Bv1%20-%3E%20%7Bv3%2C%20v4%7D%3Bv2%20-%3E%20%7Bv1%2C%20v3%7D%3Bv3%20-%3E%20%7Bv0%2C%20v1%2C%20v4%7D%3Bv4%20-%3E%20%7Bv0%7D%3B%7D`
-    pub(crate) const EDGES: [(Node, Node, f64); 10] = [
-        (0, 1, 1.0),
-        (0, 2, 1.0),
-        (1, 3, 1.0),
-        (1, 4, 1.0),
-        (2, 1, 1.0),
-        (2, 3, 1.0),
-        (3, 0, 1.0),
-        (3, 1, 1.0),
-        (3, 4, 1.0),
-        (4, 0, 1.0),
-    ];
-
-    /// Weights for `EDGES` that **do not** introduce a negative cycle
-    pub(crate) const GOOD_WEIGHTS: [[f64; 10]; 3] = [
-        [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 3.0, 1.0, 0.0, 3.0],
-        [0.0; 10],
-        [1.0; 10],
-    ];
-
-    /// Distance matrices for each `GOOD_WEIGHTS` graph
-    pub(crate) const DISTANCES: [[[f64; 5]; 5]; 3] = [
-        [
-            [0.0, -2.0, -1.0, -3.0, -3.0],
-            [2.0, 0.0, 1.0, -1.0, -1.0],
-            [1.0, -1.0, 0.0, -2.0, -2.0],
-            [3.0, 1.0, 2.0, 0.0, 0.0],
-            [3.0, 1.0, 2.0, 0.0, 0.0],
-        ],
-        [[0.0; 5]; 5],
-        [
-            [0.0, 1.0, 1.0, 2.0, 2.0],
-            [2.0, 0.0, 3.0, 1.0, 1.0],
-            [2.0, 1.0, 0.0, 1.0, 2.0],
-            [1.0, 1.0, 2.0, 0.0, 1.0],
-            [1.0, 2.0, 2.0, 3.0, 0.0],
-        ],
-    ];
-
-    /// Weights for `EDGES` that **do** introduce a negative cycle
-    pub(crate) const BAD_WEIGHTS: [[f64; 10]; 2] = [
-        [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 3.0, 1.0, 0.0, 2.0],
-        [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
-    ];
 }

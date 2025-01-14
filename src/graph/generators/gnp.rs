@@ -1,6 +1,6 @@
 use rand_distr::Geometric;
 
-use crate::graph::*;
+use super::*;
 
 /// The G(n,p) graph generator
 pub struct Gnp {

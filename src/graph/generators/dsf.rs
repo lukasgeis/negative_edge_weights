@@ -1,7 +1,7 @@
 use fxhash::FxHashSet;
 use rand_distr::{Distribution, Uniform};
 
-use crate::graph::*;
+use super::*;
 
 /// The directed scale-free model
 ///
@@ -39,7 +39,7 @@ impl DirectedScaleFree {
             delta_in,
             n,
             distr: Uniform::new(0.0, 1.0),
-            seen_edges: FxHashSet::with_hasher(Default::default())
+            seen_edges: FxHashSet::with_hasher(Default::default()),
         }
     }
 }
@@ -127,7 +127,7 @@ impl GraphGenerator for DirectedScaleFree {
 
             edges.push((u, v));
         }
-        
+
         edges
     }
 }

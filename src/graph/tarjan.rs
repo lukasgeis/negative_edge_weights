@@ -1,16 +1,16 @@
+//! Ported from `https://github.com/goethe-tcs/breaking-the-cycle/blob/master/src/graph/connectivity.rs`
+
 use std::{iter::FusedIterator, marker::PhantomData};
 
-use crate::weight::Weight;
-
-use super::{Edge, GraphNeigbors, GraphStats, Node};
+use super::*;
 
 /// Implementation of Tarjan's Algorithm for Strongly Connected Components.
 /// It is designed as an iterator that emits the nodes of one strongly connected component at a
 /// time. Observe that the order of nodes within a component is non-deterministic; the order of the
 /// components themselves are in the reverse topological order of the SCCs (i.e. if each SCC
 /// were contracted into a single node).
-pub struct StronglyConnected<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> {
-    graph: &'a G,
+pub struct StronglyConnected<'a, W: Weight> {
+    graph: &'a Graph<W>,
     idx: Node,
 
     states: Vec<NodeState>,
@@ -20,14 +20,14 @@ pub struct StronglyConnected<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> {
 
     path_stack: Vec<Node>,
 
-    call_stack: Vec<StackFrame<'a, W, G>>,
+    call_stack: Vec<StackFrame<'a, W>>,
 
     phantom: PhantomData<W>,
 }
 
-impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> StronglyConnected<'a, W, G> {
+impl<'a, W: Weight> StronglyConnected<'a, W> {
     /// Construct the iterator for some graph
-    pub fn new(graph: &'a G) -> Self {
+    pub fn new(graph: &'a Graph<W>) -> Self {
         Self {
             graph,
             idx: 0,
@@ -69,14 +69,13 @@ impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> StronglyConnected<'a, W, G
     /// Put a pristine stack frame on the call stack. Roughly speaking, this is the first step
     /// to a recursive call of search.
     fn push_node(&mut self, node: Node, parent: Option<Node>) {
-        self.call_stack.push(StackFrame::<W, G> {
+        self.call_stack.push(StackFrame::<W> {
             node,
             parent: parent.unwrap_or(node),
             initial_stack_len: 0,
             first_call: true,
             has_loop: false,
             neighbors: self.graph.out_neighbors(node),
-            phantom: Default::default(),
         });
     }
 
@@ -113,7 +112,7 @@ impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> StronglyConnected<'a, W, G
                 self.path_stack.push(v);
             }
 
-            for w in frame.neighbors.as_ref() {
+            for w in frame.neighbors {
                 let w = w.target;
                 let w_state = self.states[w];
                 frame.has_loop |= w == v;
@@ -145,9 +144,7 @@ impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> StronglyConnected<'a, W, G
                     // while doing so
                     let component: Vec<_> = self.path_stack
                         [frame.initial_stack_len as usize..self.path_stack.len()]
-                        .iter()
-                        .copied()
-                        .collect();
+                        .to_vec();
 
                     self.path_stack.truncate(frame.initial_stack_len as usize);
 
@@ -167,14 +164,13 @@ impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> StronglyConnected<'a, W, G
 }
 
 #[derive(Debug, Clone)]
-struct StackFrame<'a, W: Weight, G: GraphStats + GraphNeigbors<W> + 'a> {
+struct StackFrame<'a, W: Weight> {
     node: Node,
     parent: Node,
     initial_stack_len: Node,
     first_call: bool,
     has_loop: bool,
     neighbors: &'a [Edge<W>],
-    phantom: PhantomData<G>,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -203,7 +199,7 @@ impl NodeState {
     }
 }
 
-impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> Iterator for StronglyConnected<'a, W, G> {
+impl<'a, W: Weight> Iterator for StronglyConnected<'a, W> {
     type Item = Vec<Node>;
 
     /// Returns either a vector of node ids that form an SCC or None if no further SCC was found
@@ -218,7 +214,40 @@ impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> Iterator for StronglyConne
     }
 }
 
-impl<'a, W: Weight, G: GraphStats + GraphNeigbors<W>> FusedIterator
-    for StronglyConnected<'a, W, G>
-{
+impl<'a, W: Weight> FusedIterator for StronglyConnected<'a, W> {}
+
+pub fn extract_subgraph<W: Weight>(graph: Graph<W>, nodes: Vec<Node>) -> Graph<W> {
+    let n = nodes.len();
+    let mut mapping = vec![n; graph.n()];
+    nodes
+        .into_iter()
+        .enumerate()
+        .for_each(|(i, u)| mapping[u] = i);
+
+    let edges: Vec<Edge<W>> = graph
+        .into_edges()
+        .into_iter()
+        .filter_map(|e| {
+            let u = mapping[e.source];
+            let v = mapping[e.target];
+            let w = e.weight;
+            if u < n && v < n {
+                Some((u, v, w).into())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Graph::from_pos_edges(n, edges)
+}
+
+pub fn extract_largest_scc<W: Weight>(graph: Graph<W>) -> Graph<W> {
+    let mut sc = StronglyConnected::new(&graph);
+    sc.set_include_singletons(false);
+    let scc = sc
+        .max_by(|a, b| a.len().cmp(&b.len()))
+        .expect("No SCC was found!");
+
+    extract_subgraph(graph, scc)
 }

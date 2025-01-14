@@ -2,7 +2,7 @@
 
 use num::Zero;
 
-pub trait Radix {
+pub trait Radix: Copy + PartialOrd + Zero {
     const NUM_BITS: usize;
 
     /// Number of high bits in a row that `self` and `other` have in common
@@ -52,9 +52,8 @@ radix_impl_int!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128);
 type Bucket<K, V> = Vec<(K, V)>;
 
 /// A RadixMinHeap
-pub struct RadixHeap<K, V>
+pub struct RadixHeap<K: Radix, V>
 where
-    K: Radix,
     [(); K::NUM_BITS + 1]: Sized,
 {
     /// Current size of the heap
@@ -62,14 +61,20 @@ where
     /// Current top-value: all elements pushed must be greater or equal too `top`
     top: K,
     /// The buckets of the heap
-    ///
-    /// TODO: Use `Vec` for stable channel
     buckets: [Bucket<K, V>; K::NUM_BITS + 1],
 }
 
-impl<K, V> RadixHeap<K, V>
+impl<K: Radix, V> Default for RadixHeap<K, V>
 where
-    K: Radix + PartialOrd + Copy + Zero,
+    [(); K::NUM_BITS + 1]: Sized,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<K: Radix, V> RadixHeap<K, V>
+where
     [(); K::NUM_BITS + 1]: Sized,
 {
     /// Creates a new Heap
@@ -92,9 +97,17 @@ where
         }
     }
 
+    /// Resets the heap with a custom new `top` value
+    #[inline]
+    pub fn set_top(&mut self, top: K) {
+        debug_assert!(self.len == 0);
+        self.top = top;
+    }
+
     /// Pushes an element to the heap
     #[inline]
     pub fn push(&mut self, key: K, value: V) {
+        debug_assert!(self.top <= key);
         self.buckets[key.radix_distance(&self.top)].push((key, value));
         self.len += 1;
     }
