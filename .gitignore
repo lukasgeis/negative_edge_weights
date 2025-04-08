@@ -6,3 +6,4 @@ data*
 pyenv/
 test/
 *log
+Cargo.lock
