@@ -1,5 +1,10 @@
 # Random Negative Edge Weights
 
+### ESA Details
+
+Experiments and plotting tools used for the submission to ESA25 are found in `exp/esa`.
+Other experiments in this repository can be disregarded for this submission.
+
 ## Building the binary
 
 Make sure that Rust is installed. The default way to acchieve this by running

@@ -66,6 +66,8 @@ for alg in ["BF", "DK", "BD"]:
         afactors[acc] = acfactors
     factors[alg] = afactors
 
+print(factors)
+
 
 def scale_num(row):
     row["num"] = row["num"] // factors[row["algo"]][row["acc"]][row["round"]]
