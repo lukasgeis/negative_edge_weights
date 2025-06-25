@@ -1,22 +1,10 @@
-#!/bin/bash
-#SBATCH --job-name=rnewasym
-#SBATCH --partition=general1
-#SBATCH --nodes=1 
-#SBATCH --ntasks=40 
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=4000
-#SBATCH --time=240:00:00
-#SBATCH --no-requeue
-#SBATCH --mail-type=FAIL
-#SBATCH --extra-node-info=2:20:1
-
 # Build binary
 cargo build --release --bin seq_exp
 BINARY="./target/release/seq_exp"
 
 
 # Create output directory and temp folders
-OUTPUTDIR="/scratch/memhierarchy/geis/rnew/asymmetrical"
+OUTPUTDIR="data/asymmetrical"
 for TEMP in "log" "ins" "pot" "weight"
 do
     mkdir -p "$OUTPUTDIR/a/$TEMP"
