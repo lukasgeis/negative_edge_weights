@@ -1,9 +1,9 @@
 # Random Negative Edge Weights
 
-### ESA Details
+### Paper Details
 
-Experiments and plotting tools used for the submission to ESA25 are found in `exp/esa`.
-Other experiments in this repository can be disregarded for this submission.
+Experiments and plotting tools used for the paper are found in `exp/paper`.
+Other experiments in this repository can be disregarded.
 
 ## Building the binary
 
