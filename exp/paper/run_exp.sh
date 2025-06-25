@@ -95,6 +95,7 @@ do
         $BINARY $dsf_50_out -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL --scc --mult 10 dsf -n 17000 -d 47 &      
 
         # Road
+        job_limit `nproc`
         $BINARY $road_out -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL file -p "graphs/luxembourg-contracted.edges" &
     done
 done
