@@ -66,6 +66,7 @@ do
         # Create Outpaths
         create_outpaths
 
+        # [-200, 100]
         job_limit `nproc`
         $BINARY $gnp_a_out -w=-200 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL gnp -n 10000 -d 10 &
         job_limit `nproc`
@@ -73,6 +74,7 @@ do
         job_limit `nproc`
         $BINARY $dsf_a_out -w=-200 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL --scc --mult 10 dsf -n 25000 -d 6 &
 
+        # [-100, 200]
         job_limit `nproc`
         $BINARY $gnp_b_out -w=-100 -W 200 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL gnp -n 10000 -d 10 &
         job_limit `nproc`

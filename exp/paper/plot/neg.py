@@ -108,6 +108,16 @@ sns.lineplot(
     legend=False
 )
 
+sns.lineplot(
+    data=data[data.degree == 500],
+    x="round",
+    y="rate",
+    hue="initial",
+    hue_order=order,
+    linestyle="dashdot",
+    legend=False
+)
+
 plot.set(xlabel=r"\textsc{MCMC Steps}")
 plot.set(ylabel=r"\textsc{Fraction of}" "\n" r"\textsc{Negative Edges}")
 
@@ -118,6 +128,7 @@ texts = [
     r"$10$",
     r"$20$",
     r"$50$",
+    r"$500$",
     r"\textsc{Initial Weights}",
     r"$w_{max}$",
     r"$w_{unif}$",
@@ -125,6 +136,7 @@ texts = [
 ]
 colors = [
     "none",
+    "black",
     "black",
     "black",
     "black",
@@ -137,13 +149,14 @@ linestyles = [
     None,
     "solid",
     "dashed",
-    "dotted"
+    "dotted",
+    "dashdot"
 ]
 
 handles, labels = gen_handles_labels(texts, colors, linestyles)
 
 legend = plt.legend(handles, labels, ncols=1, fontsize=13, loc="upper left")
 
-shift_labels_left(legend, [texts[0], texts[4]])
+shift_labels_left(legend, [texts[0], texts[5]])
 
 plt_savefig(args.output)

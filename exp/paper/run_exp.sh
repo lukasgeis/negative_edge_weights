@@ -23,7 +23,7 @@ function create_outpaths() {
     create_gen_outpath "dsf"
 }
 function create_gen_outpath() {
-    for DEG in 10 20 50
+    for DEG in 10 20 50 500
     do
         eval "$1_${DEG}_out=''"
         for EXP in "log" "ins" "pot" "weight"
@@ -92,7 +92,15 @@ do
         job_limit `nproc`
         $BINARY $rhg_50_out  -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL rhg -n 10000 -d 50 &
         job_limit `nproc`
-        $BINARY $dsf_50_out -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL --scc --mult 10 dsf -n 17000 -d 47 &      
+        $BINARY $dsf_50_out -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL --scc --mult 10 dsf -n 17000 -d 47 &
+
+        # Degree 500
+        job_limit `nproc`
+        $BINARY $gnp_500_out -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL gnp -n 10000 -d 500 &
+        job_limit `nproc`
+        $BINARY $rhg_500_out  -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL rhg -n 10000 -d 500 &
+        job_limit `nproc`
+        $BINARY $dsf_500_out -w=-100 -W 100 -r $ROUNDS --bf-skip $BFSKIP -i $INITIAL --scc --mult 10 dsf -n 12800 -d 1350 &
 
         # Road
         job_limit `nproc`
