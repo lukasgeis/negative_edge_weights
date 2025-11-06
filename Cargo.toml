@@ -60,3 +60,8 @@ test = false
 name = "neighbors_seq"
 path = "src/bin/neighbors_seq.rs"
 test = false
+
+[[bin]]
+name = "coupling"
+path = "src/bin/coupling.rs"
+test = false

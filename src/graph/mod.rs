@@ -98,6 +98,12 @@ impl<W: Weight> Graph<W> {
         self.edges[idx]
     }
 
+    /// Edges-Slice
+    #[inline]
+    pub fn edges(&self) -> &[Edge<W>] {
+        &self.edges
+    }
+
     /// Edge at index `idx` in reversed edges
     #[inline]
     pub fn rev_edge(&self, idx: usize) -> Edge<W> {
