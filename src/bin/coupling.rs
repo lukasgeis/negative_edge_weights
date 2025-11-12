@@ -11,7 +11,7 @@ use negative_edge_weights::{
     },
     logger::EmptyLogger,
     search::bidijkstra::BiDijkstra,
-    weight::{InitialWeights},
+    weight::InitialWeights,
 };
 use rand::{Rng, SeedableRng};
 use rand_distr::{Distribution, Uniform};
@@ -68,7 +68,7 @@ fn main() {
             Pcg64::from_entropy()
         };
 
-        let (min_weight, max_weight) = (-1, 1); 
+        let (min_weight, max_weight) = (-1, 1);
         /*
         (
             i64::from_f64(params.min_weight),
@@ -97,7 +97,7 @@ fn main() {
             graph.m(),
             timer.elapsed().as_millis(),
         );
-        */ 
+        */
 
         let weight_sampler = Uniform::new_inclusive(min_weight, max_weight);
 
@@ -106,7 +106,7 @@ fn main() {
             if let Some(m) = params.mult {
                 assert!(m > 0);
                 let d = degree as usize;
-                if d % m != 0 {
+                if !d.is_multiple_of(m) {
                     let next_smallest_multiple = (d / m) * m;
                     let next_biggest_multiple = next_smallest_multiple + m;
 

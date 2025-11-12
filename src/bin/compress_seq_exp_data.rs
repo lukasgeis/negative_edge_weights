@@ -144,7 +144,7 @@ fn compress_insertions(inpath: PathBuf, outpath: PathBuf, mult: Option<usize>) {
         if let Some(m) = mult {
             assert!(m > 0);
             let d = degree as usize;
-            if d % m != 0 {
+            if !d.is_multiple_of(m) {
                 let next_smallest_multiple = (d / m) * m;
                 let next_biggest_multiple = next_smallest_multiple + m;
 
@@ -269,7 +269,7 @@ fn compress_potentials(inpath: PathBuf, outpath: PathBuf, mult: Option<usize>) {
         if let Some(m) = mult {
             assert!(m > 0);
             let d = degree as usize;
-            if d % m != 0 {
+            if !d.is_multiple_of(m) {
                 let next_smallest_multiple = (d / m) * m;
                 let next_biggest_multiple = next_smallest_multiple + m;
 
@@ -388,7 +388,7 @@ fn compress_weights(inpath: PathBuf, outpath: PathBuf, mult: Option<usize>) {
         if let Some(m) = mult {
             assert!(m > 0);
             let d = degree as usize;
-            if d % m != 0 {
+            if !d.is_multiple_of(m) {
                 let next_smallest_multiple = (d / m) * m;
                 let next_biggest_multiple = next_smallest_multiple + m;
 
@@ -520,7 +520,7 @@ fn compress_conflict_lens(inpath: PathBuf, outpath: PathBuf, mult: Option<usize>
         if let Some(m) = mult {
             assert!(m > 0);
             let d = degree as usize;
-            if d % m != 0 {
+            if !d.is_multiple_of(m) {
                 let next_smallest_multiple = (d / m) * m;
                 let next_biggest_multiple = next_smallest_multiple + m;
 

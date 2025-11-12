@@ -117,7 +117,7 @@ fn main() {
         if let Some(m) = params.mult {
             assert!(m > 0);
             let d = degree as usize;
-            if d % m != 0 {
+            if !d.is_multiple_of(m) {
                 let next_smallest_multiple = (d / m) * m;
                 let next_biggest_multiple = next_smallest_multiple + m;
 
@@ -205,7 +205,7 @@ fn run_mcmc<R: Rng, D: Distribution<i64>>(
         {
             // We need not update the weight as we use a reference of the Dijkstra-Graph which will
             // be updated (if accepted) later
-            if weight < edge.weight && logger.round % skip_bf == 0 {
+            if weight < edge.weight && logger.round.is_multiple_of(skip_bf) {
                 bf.run(&graph_dk, edge.target, edge.source, -weight, &mut logger);
             }
         }
@@ -263,18 +263,18 @@ fn run_mcmc<R: Rng, D: Distribution<i64>>(
         logger.set_runtime_bd(timer.elapsed().as_nanos());
         logger.end_round(acc);
 
-        if logger.round % skip_bf != 0 {
+        if !logger.round.is_multiple_of(skip_bf) {
             logger.remove_empty_bf_insertion(acc);
         }
 
-        if logger.round % log_step == 0 {
+        if logger.round.is_multiple_of(log_step) {
             let log_data = logger.extract_log_data(log_step, skip_bf);
 
             out_log
                 .serialize(log_data)
                 .expect("Could not serialize log-data!");
 
-            if logger.round % (100 * log_step) == 0 {
+            if logger.round.is_multiple_of(100 * log_step) {
                 log_step *= 10;
 
                 skip_bf = bfskip.min(log_step / 100);

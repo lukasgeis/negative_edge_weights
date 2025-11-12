@@ -250,4 +250,16 @@ impl<W: Weight> Graph<W> {
         }
         Ok(())
     }
+
+    /// Create a graph from a graph with negative and a computed potential function.
+    /// The user is responsible for making sure no negative cycle exists
+    ///
+    /// # Safety
+    /// No negative cycle
+    pub unsafe fn from_neg_graph(neg_graph: crate::pot::Graph<W>, pot: Vec<W>) -> Self {
+        let mut g =
+            Self::from_pos_edges(neg_graph.n(), neg_graph.edges().map(|e| e.into()).collect());
+        g.potentials = pot;
+        g
+    }
 }

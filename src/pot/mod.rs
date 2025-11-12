@@ -6,7 +6,7 @@
 
 use std::{
     fmt::Debug,
-    io::{BufRead, Error, ErrorKind},
+    io::{BufRead, Error},
 };
 
 use crate::weight::Weight;
@@ -97,12 +97,31 @@ impl<W: Weight> Graph<W> {
             neg_offsets,
         }
     }
+
+    pub fn update_weights<F: FnMut() -> W>(&mut self, mut f: F) {
+        let mut neg_offset;
+        for u in 0..self.n() {
+            neg_offset = self.offsets[u];
+
+            for i in self.offsets[u]..self.offsets[u + 1] {
+                self.neighbors[i].1 = f();
+                if self.neighbors[i].1 < W::zero() {
+                    self.neighbors.swap(i, neg_offset);
+                    neg_offset += 1;
+                }
+            }
+        }
+    }
+
+    pub fn edges(&self) -> impl Iterator<Item = Edge<W>> + '_ {
+        (0..self.n()).flat_map(move |u| self.neighbors(u).iter().map(move |(v, w)| (u, *v, *w)))
+    }
 }
 
 /// Returns an IO-Error with a custom error message.
 #[inline]
 fn io_error<O>(msg: &str) -> Result<O, Error> {
-    Err(Error::new(ErrorKind::Other, msg))
+    Err(Error::other(msg))
 }
 
 /// Reads a graph from file

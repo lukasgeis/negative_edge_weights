@@ -112,7 +112,7 @@ where
         if let Some(m) = params.mult {
             assert!(m > 0);
             let d = degree as usize;
-            if d % m != 0 {
+            if !d.is_multiple_of(m) {
                 let next_smallest_multiple = (d / m) * m;
                 let next_biggest_multiple = next_smallest_multiple + m;
 

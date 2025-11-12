@@ -1,7 +1,7 @@
 use std::{
     convert::Infallible,
     fs::File,
-    io::{BufRead, BufReader, Error, ErrorKind},
+    io::{BufRead, BufReader, Error},
     path::PathBuf,
     str::FromStr,
 };
@@ -253,7 +253,7 @@ impl<W: Weight> Graph<W> {
 // Returns an IO-Error with a custom error message.
 #[inline]
 fn io_error<O>(msg: &str) -> Result<O, Error> {
-    Err(Error::new(ErrorKind::Other, msg))
+    Err(Error::other(msg))
 }
 
 /// Reads a graph from file

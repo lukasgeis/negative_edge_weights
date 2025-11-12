@@ -108,7 +108,7 @@ where
         if let Some(m) = params.mult {
             assert!(m > 0);
             let d = degree as usize;
-            if d % m != 0 {
+            if !d.is_multiple_of(m) {
                 let next_smallest_multiple = (d / m) * m;
                 let next_biggest_multiple = next_smallest_multiple + m;
 
@@ -230,7 +230,7 @@ fn run_mcmc<W: Weight, R: Rng, D: Distribution<W>>(
 
         logger.end_round(num_acc, graph.in_neighbors(node).len() - num_acc);
 
-        if logger.round % log_step == 0 {
+        if logger.round.is_multiple_of(log_step) {
             logger.add_runtime(timer.elapsed().as_nanos());
             writer
                 .serialize(logger.get_data(log_step))
@@ -238,7 +238,7 @@ fn run_mcmc<W: Weight, R: Rng, D: Distribution<W>>(
 
             timer = Instant::now();
 
-            if logger.round % (100 * log_step) == 0 {
+            if logger.round.is_multiple_of(100 * log_step) {
                 log_step *= 10;
             }
         }
