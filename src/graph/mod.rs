@@ -2,6 +2,7 @@ use std::io::Write;
 
 use crate::weight::Weight;
 
+pub mod apsp;
 pub mod generators;
 pub mod neg_cycle;
 pub mod tarjan;
@@ -261,5 +262,11 @@ impl<W: Weight> Graph<W> {
             Self::from_pos_edges(neg_graph.n(), neg_graph.edges().map(|e| e.into()).collect());
         g.potentials = pot;
         g
+    }
+
+    /// Returns *true* if all edges have a non-negative potential weight
+    #[inline]
+    pub fn has_valid_potentials(&self) -> bool {
+        self.edges.iter().all(|e| self.pot_weight(*e).is_almost_non_negative())
     }
 }

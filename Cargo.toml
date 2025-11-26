@@ -71,3 +71,8 @@ test = false
 name = "coupling_shared"
 path = "src/bin/coupling_shared.rs"
 test = false
+
+[[bin]]
+name = "apsp"
+path = "src/bin/apsp.rs"
+test = false

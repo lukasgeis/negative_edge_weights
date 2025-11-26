@@ -51,6 +51,11 @@ pub trait Weight:
     /// Convert `Self` to `f64`
     fn to_f64(self) -> f64;
 
+    /// Returns *true* if the value is almost non-negative (floating point errors)
+    fn is_almost_non_negative(self) -> bool {
+        self.to_f64() >= -1e-12
+    }
+
     fn from_i64(val: i64) -> Self;
 
     fn to_i64(self) -> i64;
