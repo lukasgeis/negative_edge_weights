@@ -17,6 +17,7 @@ BINARY="./target/release/apsp"
 
 # Create output directory and temp folders
 OUTPUTDIR="/scratch/memhierarchy/geis/rnew/apsp"
+mkdir -p $OUTPUTDIR
 
 function job_limit() {
     # Test for single positive integer input

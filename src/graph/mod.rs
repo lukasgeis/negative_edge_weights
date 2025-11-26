@@ -267,6 +267,8 @@ impl<W: Weight> Graph<W> {
     /// Returns *true* if all edges have a non-negative potential weight
     #[inline]
     pub fn has_valid_potentials(&self) -> bool {
-        self.edges.iter().all(|e| self.pot_weight(*e).is_almost_non_negative())
+        self.edges
+            .iter()
+            .all(|e| self.pot_weight(*e).is_almost_non_negative())
     }
 }

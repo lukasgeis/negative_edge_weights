@@ -4,7 +4,10 @@
 
 use negative_edge_weights::{
     graph::{
-        apsp::APSP, generators::{GraphType, Source}, tarjan::extract_largest_scc, Graph
+        apsp::APSP,
+        generators::{GraphType, Source},
+        tarjan::extract_largest_scc,
+        Graph,
     },
     logger::EmptyLogger,
     search::bidijkstra::*,
@@ -126,13 +129,7 @@ where
         graph.m(),
     );
 
-    run_mcmc(
-        graph,
-        &mut rng,
-        weight_sampler,
-        params.num_rounds,
-        prefix,
-    );
+    run_mcmc(graph, &mut rng, weight_sampler, params.num_rounds, prefix);
 }
 
 fn run_mcmc<W: Weight, R: Rng, D: Distribution<W>>(
@@ -179,12 +176,11 @@ fn run_mcmc<W: Weight, R: Rng, D: Distribution<W>>(
             }
         }
 
-
         if r == log_step {
             log_step *= 10;
             println!(
                 "{prefix},{r},{:?}",
-                apsp.run(&graph).map(|e| e.weight).collect::<Vec<W>>()    
+                apsp.run(&graph).map(|e| e.weight).collect::<Vec<W>>()
             );
         }
     }
